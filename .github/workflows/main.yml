@@ -15,6 +15,14 @@ jobs:
           folderName=$(echo "${PWD##*/}")
           rsync -r "$GITHUB_WORKSPACE" "copiedProject"
           ls -F "copiedProject/$folderName"
+          echo "All"
+          ls -al
+          echo "copied"
+          ls copiedProject
+          echo "copied inner"
+          ls "copiedProject/$folderName"
+          echo "package.json"
+          cat "copiedProject/$folderName/package.json"
 
       - name: Run Tests
         id: runTests
