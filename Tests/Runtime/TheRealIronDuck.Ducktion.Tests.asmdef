@@ -2,6 +2,9 @@
     "name": "TheRealIronDuck.Ducktion.Tests",
     "rootNamespace": "TheRealIronDuck.Ducktion.Tests",
     "references": [],
+    "optionalUnityReferences": [
+        "TestAssemblies"
+    ],
     "includePlatforms": [
         "Editor"
     ],

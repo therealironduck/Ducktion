@@ -1,0 +1,35 @@
+﻿name: Run Unity Tests
+on: [ pull_request, workflow_dispatch ]
+
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      
+      # See: https://github.com/trudeaua21/EasyAccessibilityPackage/blob/c3af1fed3a499fb814026c7db58f8282401f9424/.github/workflows/tests.yml#L11
+      - name: Copy directory to subfolder
+        run: |
+          pwd
+          folderName=$(echo "${PWD##*/}")
+          rsync -r "$GITHUB_WORKSPACE" "copiedProject"
+          ls -F "copiedProject/$folderName"
+
+      - name: Run Tests
+        id: runTests
+        uses: game-ci/unity-test-runner@v3
+        env:
+          UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
+        with:
+          projectPath: ./copiedProject/Ducktion
+          githubToken: ${{ secrets.GITHUB_TOKEN }}
+          packageMode: true
+          unityVersion: 2022.3.12f1
+          testMode: all
+
+      - name: Upload coverage report
+        uses: actions/upload-artifact@v2
+        with:
+          name: Coverage results
+          path: ${{ steps.runTests.outputs.coveragePath }}
