@@ -16,17 +16,17 @@ jobs:
           rsync -r "$GITHUB_WORKSPACE" "copiedProject"
           ls -F "copiedProject/$folderName"
 
+      
       - name: Run Tests
         id: runTests
-        uses: game-ci/unity-test-runner@main
+        uses: game-ci/unity-test-runner@v3
         env:
           UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
         with:
-          projectPath: copiedProject/Ducktion/
+          projectPath: copiedProject/Ducktion
           githubToken: ${{ secrets.GITHUB_TOKEN }}
           packageMode: true
           unityVersion: 2022.3.12f1
-          testMode: all
 
       - name: Upload coverage report
         uses: actions/upload-artifact@v2
