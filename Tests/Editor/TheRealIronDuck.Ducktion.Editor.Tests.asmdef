@@ -1,0 +1,16 @@
+{
+    "name": "TheRealIronDuck.Ducktion.Editor.Tests",
+    "rootNamespace": "TheRealIronDuck.Ducktion.Editor.Tests",
+    "references": [],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}
