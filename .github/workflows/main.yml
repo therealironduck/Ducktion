@@ -15,14 +15,6 @@ jobs:
           folderName=$(echo "${PWD##*/}")
           rsync -r "$GITHUB_WORKSPACE" "copiedProject"
           ls -F "copiedProject/$folderName"
-          echo "All"
-          ls -al
-          echo "copied"
-          ls copiedProject
-          echo "copied inner"
-          ls "copiedProject/$folderName"
-          echo "package.json"
-          cat "copiedProject/$folderName/package.json"
 
       - name: Run Tests
         id: runTests
@@ -30,7 +22,7 @@ jobs:
         env:
           UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
         with:
-          projectPath: ./copiedProject/Ducktion
+          projectPath: copiedProject/Ducktion/
           githubToken: ${{ secrets.GITHUB_TOKEN }}
           packageMode: true
           unityVersion: 2022.3.12f1
