@@ -1,7 +1,7 @@
 {
     "name": "TheRealIronDuck.Ducktion.Tests",
     "rootNamespace": "TheRealIronDuck.Ducktion.Tests",
-    "references": [],
+    "references": ["GUID:db7d8374cc927a843a7eaca5bc209736"],
     "optionalUnityReferences": [
         "TestAssemblies"
     ],

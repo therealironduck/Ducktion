@@ -1,0 +1,16 @@
+﻿using System;
+
+namespace TheRealIronDuck.Ducktion.Exceptions
+{
+    /// <summary>
+    /// This exception is thrown when a service could not be resolved from the container.
+    /// </summary>
+    public class DependencyResolveException : Exception
+    {
+        public DependencyResolveException(Type service) : base(
+            $"The service {service} is not registered"
+        )
+        {
+        }
+    }
+}
