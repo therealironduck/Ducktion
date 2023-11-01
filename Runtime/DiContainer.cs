@@ -7,6 +7,12 @@ namespace TheRealIronDuck.Ducktion
 {
     public class DiContainer : MonoBehaviour
     {
+        #region EXPOSED FIELDS
+
+        [Header("Options")]  [SerializeField] private bool dontDestroyOnLoad = true;
+
+        #endregion
+
         #region VARIABLES
 
         /// <summary>
@@ -18,6 +24,18 @@ namespace TheRealIronDuck.Ducktion
 
         #endregion
 
+        #region LIFECYCLE METHODS
+
+        private void Awake()
+        {
+            if (dontDestroyOnLoad)
+            {
+                DontDestroyOnLoad(gameObject);
+            }
+        }
+
+        #endregion
+        
         #region PUBLIC METHODS
 
         /// <summary>
