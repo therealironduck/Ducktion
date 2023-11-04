@@ -74,16 +74,8 @@ namespace TheRealIronDuck.Ducktion
             var keyType = typeof(TKey);
             var serviceType = typeof(TService);
 
-            if (serviceType.IsAbstract)
-            {
-                throw new DependencyRegisterException(keyType, "Service is abstract");
-            }
-
-            if (serviceType.IsEnum)
-            {
-                throw new DependencyRegisterException(keyType, "Service is an enum");
-            }
-
+            ValidateService(keyType, serviceType);
+            
             if (_services.ContainsKey(typeof(TKey)))
             {
                 throw new DependencyRegisterException(
@@ -92,9 +84,37 @@ namespace TheRealIronDuck.Ducktion
                 );
             }
 
-            _services.Add(typeof(TKey), typeof(TService));
+            _services.Add(keyType, serviceType);
         }
 
+        /// <summary>
+        /// Override any registered service with another implementation. Any singleton instance for this type
+        /// will be cleared as well.
+        ///
+        /// The service itself must not be abstract or an enum.
+        /// </summary>
+        /// <typeparam name="TKey">The type which gets registered</typeparam>
+        /// <typeparam name="TService">The concrete implementation type</typeparam>
+        /// <exception cref="DependencyRegisterException">If the override fails, it will throw an error</exception>
+        public void Override<TKey, TService>() where TService : TKey
+        {
+            var keyType = typeof(TKey);
+            var serviceType = typeof(TService);
+            
+            ValidateService(keyType, serviceType);
+
+            if (!_services.ContainsKey(keyType))
+            {
+                throw new DependencyRegisterException(
+                    keyType,
+                    "Service is not registered. Use `register` to register the service"
+                );
+            }
+            
+            _services[keyType] = serviceType;
+            _instances.Remove(keyType);
+        }
+        
         /// <summary>
         /// Resolve a given service from the container. It will instantiate the concrete implementation
         /// and return it.
@@ -210,6 +230,19 @@ namespace TheRealIronDuck.Ducktion
             return instance;
         }
 
+        private static void ValidateService(Type keyType, Type serviceType)
+        {
+            if (serviceType.IsAbstract)
+            {
+                throw new DependencyRegisterException(keyType, "Service is abstract");
+            }
+
+            if (serviceType.IsEnum)
+            {
+                throw new DependencyRegisterException(keyType, "Service is an enum");
+            }
+        }
+        
         #endregion
     }
 }

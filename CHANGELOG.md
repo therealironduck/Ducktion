@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added DiContainer component which can be used to register and resolve dependencies
   - Added method `Register<T>` to register a simple service
   - Added method `Register<TKey, TService>` to register a service with a specific implementation
+  - Added method `Override<TKey, TService>` to override any service with a specific implementation
   - Added method `Resolve<T>` to resolve a service
   - Added method `Resolve(Type)` to resolve a service
   - Added method `Clear` to remove any registered service and singleton instance
