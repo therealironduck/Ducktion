@@ -125,6 +125,24 @@ namespace TheRealIronDuck.Ducktion
             return InnerResolve(type, new[] { type });
         }
 
+        /// <summary>
+        /// Remove all registered services and singleton instances, basically resetting the container.
+        /// </summary>
+        public void Clear()
+        {
+            _services.Clear();
+            _instances.Clear();
+        }
+
+        /// <summary>
+        /// Reset every singleton instance. This will not remove the registered services.
+        /// If you want to reset everything, use `Clear` instead.
+        /// </summary>
+        public void Reset()
+        {
+            _instances.Clear();
+        }
+
         #endregion
 
         #region PRIVATE METHODS
