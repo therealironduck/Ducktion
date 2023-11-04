@@ -7,8 +7,8 @@ namespace TheRealIronDuck.Ducktion.Exceptions
     /// </summary>
     public class DependencyResolveException : Exception
     {
-        public DependencyResolveException(Type service) : base(
-            $"The service {service} is not registered"
+        public DependencyResolveException(Type service, string reason, Exception inner = null) : base(
+            $"The service {service} could not be resolved. Reason: {reason}", inner
         )
         {
         }

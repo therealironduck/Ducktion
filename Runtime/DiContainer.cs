@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using TheRealIronDuck.Ducktion.Exceptions;
 using UnityEngine;
 
@@ -9,7 +10,7 @@ namespace TheRealIronDuck.Ducktion
     {
         #region EXPOSED FIELDS
 
-        [Header("Options")]  [SerializeField] private bool dontDestroyOnLoad = true;
+        [Header("Options")] [SerializeField] private bool dontDestroyOnLoad = true;
 
         #endregion
 
@@ -20,7 +21,12 @@ namespace TheRealIronDuck.Ducktion
         /// with the value being the concrete implementation type. In a lot of cases both key and value
         /// can be the same type.
         /// </summary>
-        private Dictionary<Type, Type> _services = new();
+        private readonly Dictionary<Type, Type> _services = new();
+
+        /// <summary>
+        /// This dictionary stores every resolved instance so that it can be returned as a singleton.
+        /// </summary>
+        private readonly Dictionary<Type, object> _instances = new();
 
         #endregion
 
@@ -35,7 +41,7 @@ namespace TheRealIronDuck.Ducktion
         }
 
         #endregion
-        
+
         #region PUBLIC METHODS
 
         /// <summary>
@@ -84,12 +90,71 @@ namespace TheRealIronDuck.Ducktion
         /// <exception cref="DependencyResolveException">If the type couldn't be resolved, an error will be thrown</exception>
         public T Resolve<T>()
         {
-            if (!_services.ContainsKey(typeof(T)))
+            return (T)Resolve(typeof(T));
+        }
+
+        public object Resolve(Type type)
+        {
+            return InnerResolve(type, new[] { type });
+        }
+
+        #endregion
+
+        #region PRIVATE METHODS
+
+        private object InnerResolve(Type type, Type[] dependencyChain)
+        {
+            if (!_services.ContainsKey(type))
             {
-                throw new DependencyResolveException(typeof(T));
+                throw new DependencyResolveException(type, "Service is not registered");
             }
 
-            return (T)Activator.CreateInstance(_services[typeof(T)]);
+            if (_instances.TryGetValue(type, out var singleton))
+            {
+                return singleton;
+            }
+
+            var constructors = type.GetConstructors();
+            if (constructors.Length > 1)
+            {
+                throw new DependencyResolveException(type, "Service has more than one constructor");
+            }
+
+            var parameters = new List<object>();
+
+            foreach (var constructorInfo in constructors)
+            {
+                foreach (var parameter in constructorInfo.GetParameters())
+                {
+                    if (dependencyChain.Contains(parameter.ParameterType))
+                    {
+                        throw new DependencyResolveException(
+                            type,
+                            $"Circular dependency detected for parameter `{parameter.Name}`"
+                        );
+                    }
+                    
+                    try
+                    {
+                        var newChain = dependencyChain.Append(parameter.ParameterType).ToArray();
+                        
+                        parameters.Add(InnerResolve(parameter.ParameterType, newChain));
+                    }
+                    catch (DependencyResolveException exception)
+                    {
+                        throw new DependencyResolveException(
+                            type,
+                            $"Parameter `{parameter.Name}` could not be resolved",
+                            exception
+                        );
+                    }
+                }
+            }
+
+            var instance = Activator.CreateInstance(_services[type], parameters.ToArray());
+            _instances.Add(type, instance);
+
+            return instance;
         }
 
         #endregion
