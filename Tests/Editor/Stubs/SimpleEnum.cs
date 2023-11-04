@@ -1,4 +1,4 @@
-﻿namespace TheRealIronDuck.Ducktion.Tests.Stubs
+﻿namespace TheRealIronDuck.Ducktion.Editor.Tests.Editor.Stubs
 {
     public enum SimpleEnum
     {

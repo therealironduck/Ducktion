@@ -1,4 +1,4 @@
-﻿namespace TheRealIronDuck.Ducktion.Tests.Stubs
+﻿namespace TheRealIronDuck.Ducktion.Editor.Tests.Editor.Stubs
 {
     /// <summary>
     /// This class is a simple empty service without any dependencies.

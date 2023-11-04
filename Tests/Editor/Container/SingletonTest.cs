@@ -1,7 +1,7 @@
 ﻿using NUnit.Framework;
-using TheRealIronDuck.Ducktion.Tests.Stubs;
+using TheRealIronDuck.Ducktion.Editor.Tests.Editor.Stubs;
 
-namespace TheRealIronDuck.Ducktion.Tests.Container
+namespace TheRealIronDuck.Ducktion.Editor.Tests.Editor.Container
 {
     public class SingletonTest : DucktionTest
     {

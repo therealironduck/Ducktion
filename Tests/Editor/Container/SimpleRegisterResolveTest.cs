@@ -1,8 +1,8 @@
 ﻿using NUnit.Framework;
+using TheRealIronDuck.Ducktion.Editor.Tests.Editor.Stubs;
 using TheRealIronDuck.Ducktion.Exceptions;
-using TheRealIronDuck.Ducktion.Tests.Stubs;
 
-namespace TheRealIronDuck.Ducktion.Tests.Container
+namespace TheRealIronDuck.Ducktion.Editor.Tests.Editor.Container
 {
     public class SimpleRegisterResolveTest : DucktionTest
     {

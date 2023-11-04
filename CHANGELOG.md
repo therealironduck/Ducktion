@@ -21,3 +21,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - When a service is already registered
   - When a service couldn't be resolved
   - When a circular dependency is detected
+- Added ability to get a singleton version of the container from anywhere
+  - Using `Ducktion.singleton`
+  - This will also create a new container if none exists

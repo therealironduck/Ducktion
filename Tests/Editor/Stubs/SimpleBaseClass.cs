@@ -1,4 +1,4 @@
-﻿namespace TheRealIronDuck.Ducktion.Tests.Stubs
+﻿namespace TheRealIronDuck.Ducktion.Editor.Tests.Editor.Stubs
 {
     /// <summary>
     /// This is just an empty class where other services can extend from.

@@ -46,6 +46,8 @@ namespace TheRealIronDuck.Ducktion
             {
                 DontDestroyOnLoad(gameObject);
             }
+
+            Ducktion.RegisterContainer(this);
         }
 
         #endregion

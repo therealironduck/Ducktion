@@ -1,4 +1,4 @@
-﻿namespace TheRealIronDuck.Ducktion.Tests.Stubs
+﻿namespace TheRealIronDuck.Ducktion.Editor.Tests.Editor.Stubs
 {
     /// <summary>
     /// This is a service which requires another service in its constructor.
