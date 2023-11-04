@@ -37,7 +37,7 @@ namespace TheRealIronDuck.Ducktion.Tests.Container
         public void ItThrowsAnErrorIfTheServiceIsUnknown()
         {
             var error = Assert.Throws<DependencyResolveException>(() => { container.Resolve<SimpleService>(); });
-            
+
             Assert.That(error.Message, Does.Contain("Service is not registered"));
         }
 
@@ -61,7 +61,7 @@ namespace TheRealIronDuck.Ducktion.Tests.Container
             var error = Assert.Throws<DependencyRegisterException>(() => { container.Register<SimpleEnum>(); });
             Assert.That(error.Message, Does.Contain("Service is an enum"));
         }
-        
+
         [Test]
         public void ItCanResolveAServiceByGivingTheTypeAsParameter()
         {
@@ -69,6 +69,29 @@ namespace TheRealIronDuck.Ducktion.Tests.Container
 
             var service = container.Resolve(typeof(SimpleService));
             Assert.IsInstanceOf<SimpleService>(service);
+        }
+
+        [Test]
+        public void ItThrowsAnErrorIfTheServiceIsAlreadyRegistered()
+        {
+            container.Register<SimpleService>();
+
+            var error = Assert.Throws<DependencyRegisterException>(() => { container.Register<SimpleService>(); });
+            Assert.That(
+                error.Message,
+                Does.Contain("Service is already registered. Use `override` to override the service")
+            );
+
+            container.Register<ISimpleInterface, SimpleService>();
+
+            var error2 = Assert.Throws<DependencyRegisterException>(() =>
+            {
+                container.Register<ISimpleInterface, SimpleService>();
+            });
+            Assert.That(
+                error2.Message,
+                Does.Contain("Service is already registered. Use `override` to override the service")
+            );
         }
     }
 }

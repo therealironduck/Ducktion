@@ -10,6 +10,10 @@ namespace TheRealIronDuck.Ducktion
     {
         #region EXPOSED FIELDS
 
+        /// <summary>
+        /// When this is toggled on, unity wont destroy this object when changing scenes. If you want to have
+        /// a separate container for each scene, you should disable this. 
+        /// </summary>
         [Header("Options")] [SerializeField] private bool dontDestroyOnLoad = true;
 
         #endregion
@@ -32,6 +36,10 @@ namespace TheRealIronDuck.Ducktion
 
         #region LIFECYCLE METHODS
 
+        /// <summary>
+        /// Handle some initialization logic. If the `dontDestroyOnLoad` flag is set, the container
+        /// wont be destroyed when changing scenes.
+        /// </summary>
         private void Awake()
         {
             if (dontDestroyOnLoad)
@@ -63,16 +71,25 @@ namespace TheRealIronDuck.Ducktion
         /// <exception cref="DependencyRegisterException">If the registration fails, it will throw an error</exception>
         public void Register<TKey, TService>() where TService : TKey
         {
+            var keyType = typeof(TKey);
             var serviceType = typeof(TService);
 
             if (serviceType.IsAbstract)
             {
-                throw new DependencyRegisterException(serviceType, "Service is abstract");
+                throw new DependencyRegisterException(keyType, "Service is abstract");
             }
 
             if (serviceType.IsEnum)
             {
-                throw new DependencyRegisterException(serviceType, "Service is an enum");
+                throw new DependencyRegisterException(keyType, "Service is an enum");
+            }
+
+            if (_services.ContainsKey(typeof(TKey)))
+            {
+                throw new DependencyRegisterException(
+                    keyType,
+                    "Service is already registered. Use `override` to override the service"
+                );
             }
 
             _services.Add(typeof(TKey), typeof(TService));
@@ -93,6 +110,16 @@ namespace TheRealIronDuck.Ducktion
             return (T)Resolve(typeof(T));
         }
 
+        /// <summary>
+        /// Resolve a given service from the container. It will instantiate the concrete implementation
+        /// and return it.
+        ///
+        /// By default all returned services are stored as singleton. So if you request the same service
+        /// twice, you will get the same instance. 
+        /// </summary>
+        /// <param name="type">The type which should be resolved</param>
+        /// <returns>The singleton instance</returns>
+        /// <exception cref="DependencyResolveException">If the type couldn't be resolved, an error will be thrown</exception>
         public object Resolve(Type type)
         {
             return InnerResolve(type, new[] { type });
@@ -102,6 +129,14 @@ namespace TheRealIronDuck.Ducktion
 
         #region PRIVATE METHODS
 
+        /// <summary>
+        /// Inner logic to resolve a component. This method handles the recursive resolving of all
+        /// parameters of the constructor. Also it checks for circular dependencies.
+        /// </summary>
+        /// <param name="type">The type which should be resolved</param>
+        /// <param name="dependencyChain">Internal variable to keep track of the whole chain of dependencies</param>
+        /// <returns>The singleton instance</returns>
+        /// <exception cref="DependencyResolveException">If the type couldn't be resolved, an error will be thrown</exception>
         private object InnerResolve(Type type, Type[] dependencyChain)
         {
             if (!_services.ContainsKey(type))
@@ -133,11 +168,11 @@ namespace TheRealIronDuck.Ducktion
                             $"Circular dependency detected for parameter `{parameter.Name}`"
                         );
                     }
-                    
+
                     try
                     {
                         var newChain = dependencyChain.Append(parameter.ParameterType).ToArray();
-                        
+
                         parameters.Add(InnerResolve(parameter.ParameterType, newChain));
                     }
                     catch (DependencyResolveException exception)
