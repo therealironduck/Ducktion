@@ -6,6 +6,16 @@ using UnityEngine;
 
 namespace TheRealIronDuck.Ducktion
 {
+    /// <summary>
+    /// This is the core component of this whole package. It holds a list of all registered services
+    /// and their concrete implementations. It also stores all resolved instances as singletons.
+    ///
+    /// There can only ever be one container active at a time and it can be configured through code
+    /// or the editor.
+    ///
+    /// If you want to start quickly, simply attach the component to any game object or call the
+    /// `Ducktion.singleton` from anywhere in your code.
+    /// </summary>
     public class DiContainer : MonoBehaviour
     {
         #region EXPOSED FIELDS
@@ -39,6 +49,9 @@ namespace TheRealIronDuck.Ducktion
         /// <summary>
         /// Handle some initialization logic. If the `dontDestroyOnLoad` flag is set, the container
         /// wont be destroyed when changing scenes.
+        ///
+        /// Also this method registers the container in the static `Ducktion` class, so that it can
+        /// be called from anywhere in the code using `Ducktion.singleton`.
         /// </summary>
         private void Awake()
         {
