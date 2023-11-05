@@ -1,5 +1,4 @@
-﻿using System.Security.Cryptography;
-using NUnit.Framework;
+﻿using NUnit.Framework;
 using TheRealIronDuck.Ducktion.Exceptions;
 
 namespace TheRealIronDuck.Ducktion.Editor.Tests.Editor.Exceptions

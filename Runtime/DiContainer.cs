@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using TheRealIronDuck.Ducktion.Exceptions;
+using TheRealIronDuck.Ducktion.Logging;
 using UnityEngine;
 
 namespace TheRealIronDuck.Ducktion
@@ -26,6 +27,15 @@ namespace TheRealIronDuck.Ducktion
         /// </summary>
         [Header("Options")] [SerializeField] private bool dontDestroyOnLoad = true;
 
+        /// <summary>
+        /// This is the log level for the container itself. It will be used to log all registered services
+        /// and any other actions the container does.
+        ///
+        /// In production you should set this to `Error` to only log errors. In development you can set it
+        /// to `Info` or `Debug` to get more detailed information.
+        /// </summary>
+        [SerializeField] private LogLevel logLevel = LogLevel.Error;
+
         #endregion
 
         #region VARIABLES
@@ -34,13 +44,25 @@ namespace TheRealIronDuck.Ducktion
         /// This variable contains all registered service references. The key is for example the interface
         /// with the value being the concrete implementation type. In a lot of cases both key and value
         /// can be the same type.
+        ///
+        /// By default we register our own logger, so that we can log all events happening.
         /// </summary>
-        private readonly Dictionary<Type, Type> _services = new();
+        private readonly Dictionary<Type, Type> _services = new()
+        {
+            { typeof(DucktionLogger), typeof(DucktionLogger) }
+        };
 
         /// <summary>
         /// This dictionary stores every resolved instance so that it can be returned as a singleton.
         /// </summary>
         private readonly Dictionary<Type, object> _instances = new();
+
+        /// <summary>
+        /// A reference to the logger instance. This is used to log all events happening in the container.
+        /// This variable is resolved within the `Reinitialize` method and comes directly from the container.
+        /// #EatYourOwnDogFood
+        /// </summary>
+        private DucktionLogger _logger;
 
         #endregion
 
@@ -60,12 +82,37 @@ namespace TheRealIronDuck.Ducktion
                 DontDestroyOnLoad(gameObject);
             }
 
-            Ducktion.RegisterContainer(this);
+            Reinitialize();
         }
 
         #endregion
 
         #region PUBLIC METHODS
+
+        /// <summary>
+        /// Reinitialize the container. This will register the container in the static `Ducktion` class
+        /// and create a new logger instance with the configured log level.
+        /// </summary>
+        public void Reinitialize()
+        {
+            Ducktion.RegisterContainer(this);
+
+            _logger = Resolve<DucktionLogger>();
+            _logger.Configure(logLevel);
+
+            _logger.Log(LogLevel.Info, "Reinitialized container");
+        }
+
+        /// <summary>
+        /// This method can be used to configure the container code-wise. It will reinitialize the container
+        /// afterwards.
+        /// </summary>
+        /// <param name="newLevel">The log level</param>
+        public void Configure(LogLevel newLevel)
+        {
+            logLevel = newLevel;
+            Reinitialize();
+        }
 
         /// <summary>
         /// Register a new service. The service type is used as the key and the concrete implementation.
@@ -90,9 +137,11 @@ namespace TheRealIronDuck.Ducktion
             var serviceType = typeof(TService);
 
             ValidateService(keyType, serviceType);
-            
+
             if (_services.ContainsKey(typeof(TKey)))
             {
+                _logger.Log(LogLevel.Error, $"Service {keyType} is already registered");
+
                 throw new DependencyRegisterException(
                     keyType,
                     "Service is already registered. Use `override` to override the service"
@@ -100,6 +149,7 @@ namespace TheRealIronDuck.Ducktion
             }
 
             _services.Add(keyType, serviceType);
+            _logger.Log(LogLevel.Debug, $"Registered service: {keyType} => {serviceType}");
         }
 
         /// <summary>
@@ -115,21 +165,25 @@ namespace TheRealIronDuck.Ducktion
         {
             var keyType = typeof(TKey);
             var serviceType = typeof(TService);
-            
+
             ValidateService(keyType, serviceType);
 
             if (!_services.ContainsKey(keyType))
             {
+                _logger.Log(LogLevel.Error, $"Service {keyType} is not registered");
+
                 throw new DependencyRegisterException(
                     keyType,
                     "Service is not registered. Use `register` to register the service"
                 );
             }
-            
+
             _services[keyType] = serviceType;
             _instances.Remove(keyType);
+
+            _logger.Log(LogLevel.Debug, $"Overridden service: {keyType} => {serviceType}");
         }
-        
+
         /// <summary>
         /// Resolve a given service from the container. It will instantiate the concrete implementation
         /// and return it.
@@ -165,17 +219,26 @@ namespace TheRealIronDuck.Ducktion
         /// </summary>
         public void Clear()
         {
+            _logger.Log(LogLevel.Info, "Clearing container");
+
             _services.Clear();
+            _services.Add(typeof(DucktionLogger), typeof(DucktionLogger));
+
             _instances.Clear();
+
+            Reinitialize();
         }
 
         /// <summary>
         /// Reset every singleton instance. This will not remove the registered services.
         /// If you want to reset everything, use `Clear` instead.
         /// </summary>
-        public void Reset()
+        public void ResetSingletons()
         {
+            _logger.Log(LogLevel.Info, "Resetting container");
+
             _instances.Clear();
+            Reinitialize();
         }
 
         #endregion
@@ -194,6 +257,8 @@ namespace TheRealIronDuck.Ducktion
         {
             if (!_services.ContainsKey(type))
             {
+                _logger?.Log(LogLevel.Error, $"Service {type} is not registered");
+
                 throw new DependencyResolveException(type, "Service is not registered");
             }
 
@@ -205,6 +270,8 @@ namespace TheRealIronDuck.Ducktion
             var constructors = type.GetConstructors();
             if (constructors.Length > 1)
             {
+                _logger?.Log(LogLevel.Error, $"Service {type} has multiple constructors");
+
                 throw new DependencyResolveException(type, "Service has more than one constructor");
             }
 
@@ -216,6 +283,8 @@ namespace TheRealIronDuck.Ducktion
                 {
                     if (dependencyChain.Contains(parameter.ParameterType))
                     {
+                        _logger?.Log(LogLevel.Error, $"Service {type} has a circular dependency");
+
                         throw new DependencyResolveException(
                             type,
                             $"Circular dependency detected for parameter `{parameter.Name}`"
@@ -230,6 +299,8 @@ namespace TheRealIronDuck.Ducktion
                     }
                     catch (DependencyResolveException exception)
                     {
+                        _logger?.Log(LogLevel.Error, $"Service {type} cant resolve parameter: {parameter.Name}");
+
                         throw new DependencyResolveException(
                             type,
                             $"Parameter `{parameter.Name}` could not be resolved",
@@ -242,22 +313,31 @@ namespace TheRealIronDuck.Ducktion
             var instance = Activator.CreateInstance(_services[type], parameters.ToArray());
             _instances.Add(type, instance);
 
+            _logger?.Log(
+                LogLevel.Debug,
+                $"Resolved service: {type} => {instance.GetType()}"
+            );
+
             return instance;
         }
 
-        private static void ValidateService(Type keyType, Type serviceType)
+        private void ValidateService(Type keyType, Type serviceType)
         {
             if (serviceType.IsAbstract)
             {
+                _logger.Log(LogLevel.Error, $"Service {keyType} is abstract");
+                
                 throw new DependencyRegisterException(keyType, "Service is abstract");
             }
 
             if (serviceType.IsEnum)
             {
+                _logger.Log(LogLevel.Error, $"Service {keyType} is an enum");
+                
                 throw new DependencyRegisterException(keyType, "Service is an enum");
             }
         }
-        
+
         #endregion
     }
 }

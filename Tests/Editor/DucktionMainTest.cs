@@ -1,7 +1,6 @@
 ﻿using NUnit.Framework;
 using TheRealIronDuck.Ducktion.Editor.Tests.Editor.Stubs;
 using TheRealIronDuck.Ducktion.Exceptions;
-using UnityEngine.Assertions.Must;
 
 namespace TheRealIronDuck.Ducktion.Editor.Tests.Editor
 {
@@ -18,6 +17,8 @@ namespace TheRealIronDuck.Ducktion.Editor.Tests.Editor
         public void ItCanInstantiateANewContainerAtRuntime()
         {
             var singleton = Ducktion.singleton;
+            singleton.Reinitialize();
+            
             Assert.IsNotNull(singleton);
             Assert.IsInstanceOf<DiContainer>(singleton);
         }
@@ -26,6 +27,7 @@ namespace TheRealIronDuck.Ducktion.Editor.Tests.Editor
         public void ItReturnsTheSameContainerEverytime()
         {
             var container1 = Ducktion.singleton;
+            container1.Reinitialize();
             container1.Register<SimpleService>();
 
             var container2 = Ducktion.singleton;
@@ -33,28 +35,14 @@ namespace TheRealIronDuck.Ducktion.Editor.Tests.Editor
 
             Assert.IsNotNull(service);
         }
-
-        [Test]
-        public void ItCanClearTheSingleton()
-        {
-            var existingContainer = Ducktion.singleton;
-            existingContainer.Register<SimpleService>();
-
-            Ducktion.Clear();
-
-            var container2 = Ducktion.singleton;
-            Assert.AreNotEqual(existingContainer, container2);
-        }
-
+        
         [Test]
         public void ItThrowsAnExceptionIfThereAreTwoContainersAtTheSameTime()
         {
             var container1 = CreateContainer();
             Ducktion.RegisterContainer(container1);
             
-            var container2 = CreateContainer();
-
-            var error = Assert.Throws<DucktionException>(() => Ducktion.RegisterContainer(container2));
+            var error = Assert.Throws<DucktionException>(() => CreateContainer());
             Assert.AreEqual(
                 "There is already a container in the scene. You can only have one container at a time.",
                 error.Message

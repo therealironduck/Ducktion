@@ -23,5 +23,17 @@ namespace TheRealIronDuck.Ducktion.Tests
 
             Assert.IsNotNull(service);
         }
+        
+        [Test]
+        public void ItCanClearTheSingleton()
+        {
+            var existingContainer = Ducktion.singleton;
+            existingContainer.Register<SimpleService>();
+
+            Ducktion.Clear();
+
+            var container2 = Ducktion.singleton;
+            Assert.AreNotEqual(existingContainer, container2);
+        }
     }
 }
