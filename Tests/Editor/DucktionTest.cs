@@ -1,5 +1,6 @@
-﻿using System.Threading.Tasks;
-using NUnit.Framework;
+﻿using NUnit.Framework;
+using TheRealIronDuck.Ducktion.Editor.Tests.Editor.Fakes;
+using TheRealIronDuck.Ducktion.Logging;
 using UnityEngine;
 
 namespace TheRealIronDuck.Ducktion.Editor.Tests.Editor
@@ -17,7 +18,7 @@ namespace TheRealIronDuck.Ducktion.Editor.Tests.Editor
                 return;
             }
 
-            container = CreateContainer();
+            container = CreateContainer(config);
         }
 
         [TearDown]
@@ -26,10 +27,25 @@ namespace TheRealIronDuck.Ducktion.Editor.Tests.Editor
             Ducktion.Clear();
         }
 
-        protected static DiContainer CreateContainer() => new GameObject("Container").AddComponent<DiContainer>();
+        protected static DiContainer CreateContainer(DucktionTestConfig config = default)
+        {
+            var container = new GameObject("Container").AddComponent<DiContainer>();
+            container.Configure(config.LogLevel);
+
+            return container;
+        }
 
         protected virtual DucktionTestConfig Configure() => new(
-            createContainer: true
+            createContainer: true,
+            logLevel: LogLevel.Disabled
         );
+
+        protected FakeLogger FakeLogger()
+        {
+            container.Override<DucktionLogger, FakeLogger>();
+            container.Reinitialize();
+            
+            return container.Resolve<DucktionLogger>() as FakeLogger;
+        }
     }
 }

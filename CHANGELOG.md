@@ -15,7 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Added method `Resolve<T>` to resolve a service
   - Added method `Resolve(Type)` to resolve a service
   - Added method `Clear` to remove any registered service and singleton instance
-  - Added method `Reset` to remove any singleton instance
+  - Added method `ResetSingletons` to remove any singleton instance
 - Handle security methods and exceptions
   - When a service is abstract / interface / enum
   - When a service is already registered
@@ -24,3 +24,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added ability to get a singleton version of the container from anywhere
   - Using `Ducktion.singleton`
   - This will also create a new container if none exists
+- The container logs every event in the console
+  - This is configurable on the container itself and can be disabled
+  - Possible log levels: Debug, Info, Error, Disabled

@@ -38,7 +38,7 @@ namespace TheRealIronDuck.Ducktion.Editor.Tests.Editor.Container
             container.Register<SimpleService>();
             var serviceA = container.Resolve<SimpleService>();
 
-            container.Reset();
+            container.ResetSingletons();
             
             var serviceB = container.Resolve<SimpleService>();
             

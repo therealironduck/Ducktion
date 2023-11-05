@@ -51,7 +51,7 @@ namespace TheRealIronDuck.Ducktion
         /// <exception cref="DucktionException">If there is already a container registered, it will throw an error</exception>
         public static void RegisterContainer(DiContainer container)
         {
-            if (_singleton)
+            if (_singleton && _singleton != container)
             {
                 throw new DucktionException(
                     "There is already a container in the scene. You can only have one container at a time."
