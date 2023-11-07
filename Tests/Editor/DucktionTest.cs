@@ -30,7 +30,11 @@ namespace TheRealIronDuck.Ducktion.Editor.Tests.Editor
         protected static DiContainer CreateContainer(DucktionTestConfig config = default)
         {
             var container = new GameObject("Container").AddComponent<DiContainer>();
-            container.Configure(config.LogLevel);
+            container.Configure(
+                newLevel: config.LogLevel,
+                newEnableAutoResolve: config.EnableAutoResolve,
+                newAutoResolveSingletonMode: config.AutoResolveSingletonMode
+            );
 
             return container;
         }
@@ -44,7 +48,7 @@ namespace TheRealIronDuck.Ducktion.Editor.Tests.Editor
         {
             container.Override<DucktionLogger, FakeLogger>();
             container.Reinitialize();
-            
+
             return container.Resolve<DucktionLogger>() as FakeLogger;
         }
     }

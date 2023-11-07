@@ -153,6 +153,9 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   dontDestroyOnLoad: 1
+  logLevel: 2
+  enableAutoResolve: 1
+  autoResolveSingletonMode: 0
 --- !u!4 &455467825
 Transform:
   m_ObjectHideFlags: 0
