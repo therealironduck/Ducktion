@@ -19,6 +19,16 @@ namespace TheRealIronDuck.Ducktion.Editor.Tests.Editor.Container
             var simple = container.Resolve<ISimpleInterface>();
             Assert.AreSame(simple, service.Simple);
         }
+        
+        [Test]
+        public void ItCanResolveAServiceRecursivelyIfTheTypeIsAnInterface()
+        {
+            container.Register<AnotherService>();
+            container.Register<ISimpleInterface, SimpleServiceWithDependency>();
+
+            var service = container.Resolve<ISimpleInterface>();
+            Assert.IsInstanceOf<SimpleServiceWithDependency>(service);
+        }
 
         [Test]
         public void ItThrowsAnErrorIfTheObjectHasMoreThanOneConstructor()

@@ -16,6 +16,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Added method `Resolve(Type)` to resolve a service
   - Added method `Clear` to remove any registered service and singleton instance
   - Added method `ResetSingletons` to remove any singleton instance
+- The container can automatically resolve dependencies, even if they are not registered
+  - This option can be toggled in the configuration
+  - Optionally it can be configured if auto resolved services are stored as singletons
 - Handle security methods and exceptions
   - When a service is abstract / interface / enum
   - When a service is already registered

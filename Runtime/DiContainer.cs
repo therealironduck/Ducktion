@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using TheRealIronDuck.Ducktion.Enums;
 using TheRealIronDuck.Ducktion.Exceptions;
 using TheRealIronDuck.Ducktion.Logging;
 using UnityEngine;
@@ -25,7 +26,7 @@ namespace TheRealIronDuck.Ducktion
         /// When this is toggled on, unity wont destroy this object when changing scenes. If you want to have
         /// a separate container for each scene, you should disable this. 
         /// </summary>
-        [Header("Options")] [SerializeField] private bool dontDestroyOnLoad = true;
+        [SerializeField] private bool dontDestroyOnLoad = true;
 
         /// <summary>
         /// This is the log level for the container itself. It will be used to log all registered services
@@ -35,6 +36,19 @@ namespace TheRealIronDuck.Ducktion
         /// to `Info` or `Debug` to get more detailed information.
         /// </summary>
         [SerializeField] private LogLevel logLevel = LogLevel.Error;
+
+        /// <summary>
+        /// If set, Ducktion will try to automatically resolve any given type. This means you don't need
+        /// to register any services manually. Manually registered services however will always take
+        /// precedence over automatically resolved ones.
+        /// </summary>
+        [SerializeField] private bool enableAutoResolve = true;
+
+        /// <summary>
+        /// Specify the singleton mode for automatically resolved services. This will only be used if
+        /// enableAutoResolve is set to true.
+        /// </summary>
+        [SerializeField] private SingletonMode autoResolveSingletonMode = SingletonMode.Singleton;
 
         #endregion
 
@@ -108,9 +122,18 @@ namespace TheRealIronDuck.Ducktion
         /// afterwards.
         /// </summary>
         /// <param name="newLevel">The log level</param>
-        public void Configure(LogLevel newLevel)
+        /// <param name="newEnableAutoResolve">Should auto resolve be enabled?</param>
+        /// <param name="newAutoResolveSingletonMode">The singleton mode of auto-resolved services</param>
+        public void Configure(
+            LogLevel newLevel = LogLevel.Error,
+            bool newEnableAutoResolve = true,
+            SingletonMode newAutoResolveSingletonMode = SingletonMode.Singleton
+        )
         {
             logLevel = newLevel;
+            enableAutoResolve = newEnableAutoResolve;
+            autoResolveSingletonMode = newAutoResolveSingletonMode;
+
             Reinitialize();
         }
 
@@ -255,7 +278,7 @@ namespace TheRealIronDuck.Ducktion
         /// <exception cref="DependencyResolveException">If the type couldn't be resolved, an error will be thrown</exception>
         private object InnerResolve(Type type, Type[] dependencyChain)
         {
-            if (!_services.ContainsKey(type))
+            if (!_services.ContainsKey(type) && !enableAutoResolve)
             {
                 _logger?.Log(LogLevel.Error, $"Service {type} is not registered");
 
@@ -267,12 +290,20 @@ namespace TheRealIronDuck.Ducktion
                 return singleton;
             }
 
-            var constructors = type.GetConstructors();
+            var targetType = type;
+            var isAutoResolved = true;
+            if (_services.TryGetValue(type, out var realType))
+            {
+                isAutoResolved = false;
+                targetType = realType;
+            }
+
+            var constructors = targetType.GetConstructors();
             if (constructors.Length > 1)
             {
-                _logger?.Log(LogLevel.Error, $"Service {type} has multiple constructors");
+                _logger?.Log(LogLevel.Error, $"Service {targetType} has multiple constructors");
 
-                throw new DependencyResolveException(type, "Service has more than one constructor");
+                throw new DependencyResolveException(targetType, "Service has more than one constructor");
             }
 
             var parameters = new List<object>();
@@ -310,8 +341,12 @@ namespace TheRealIronDuck.Ducktion
                 }
             }
 
-            var instance = Activator.CreateInstance(_services[type], parameters.ToArray());
-            _instances.Add(type, instance);
+            var instance = Activator.CreateInstance(targetType, parameters.ToArray());
+
+            if (!isAutoResolved || autoResolveSingletonMode == SingletonMode.Singleton)
+            {
+                _instances.Add(type, instance);
+            }
 
             _logger?.Log(
                 LogLevel.Debug,
@@ -326,14 +361,14 @@ namespace TheRealIronDuck.Ducktion
             if (serviceType.IsAbstract)
             {
                 _logger.Log(LogLevel.Error, $"Service {keyType} is abstract");
-                
+
                 throw new DependencyRegisterException(keyType, "Service is abstract");
             }
 
             if (serviceType.IsEnum)
             {
                 _logger.Log(LogLevel.Error, $"Service {keyType} is an enum");
-                
+
                 throw new DependencyRegisterException(keyType, "Service is an enum");
             }
         }
