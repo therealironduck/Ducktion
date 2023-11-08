@@ -229,14 +229,21 @@ namespace TheRealIronDuck.Ducktion
         ///
         /// The service itself must not be abstract or an enum.
         /// </summary>
-        /// <typeparam name="TKey">The type which gets registered</typeparam>
-        /// <typeparam name="TService">The concrete implementation type</typeparam>
+        /// <param name="keyType">The type which gets registered</param>
+        /// <param name="serviceType">The concrete implementation type</param>
         /// <exception cref="DependencyRegisterException">If the override fails, it will throw an error</exception>
-        public void Override<TKey, TService>() where TService : TKey
+        public void Override(Type keyType, Type serviceType)
         {
-            var keyType = typeof(TKey);
-            var serviceType = typeof(TService);
+            if (!keyType.IsAssignableFrom(serviceType))
+            {
+                _logger.Log(LogLevel.Error, $"Service {serviceType} does not extend {keyType}");
 
+                throw new DependencyRegisterException(
+                    keyType,
+                    $"Service {serviceType} does not extend {keyType}"
+                );
+            }
+            
             ValidateService(keyType, serviceType);
 
             if (!_services.ContainsKey(keyType))
@@ -254,6 +261,39 @@ namespace TheRealIronDuck.Ducktion
 
             _logger.Log(LogLevel.Debug, $"Overridden service: {keyType} => {serviceType}");
         }
+
+        /// <summary>
+        /// Override any registered service with another implementation. Any singleton instance for this type
+        /// will be cleared as well.
+        ///
+        /// The service itself must not be abstract or an enum.
+        /// </summary>
+        /// <typeparam name="TKey">The type which gets registered</typeparam>
+        /// <typeparam name="TService">The concrete implementation type</typeparam>
+        /// <exception cref="DependencyRegisterException">If the override fails, it will throw an error</exception>
+        public void Override<TKey, TService>() where TService : TKey => Override(typeof(TKey), typeof(TService));
+
+        /// <summary>
+        /// Override any registered service with a specific instance. The instance will be registered as a singleton
+        /// and must extend the given type.
+        /// </summary>
+        /// <param name="type">The type which gets registered</param>
+        /// <param name="instance">The instance which should be returned</param>
+        /// <exception cref="DependencyRegisterException">If the registration fails, it will throw an error</exception>
+        public void Override(Type type, object instance)
+        {
+            Override(type, instance.GetType());
+            _instances.Add(type, instance);
+        }
+
+        /// <summary>
+        /// Override any registered service with a specific instance. The instance will be registered as a singleton
+        /// and must extend the given type.
+        /// </summary>
+        /// <typeparam name="T">The type which gets registered</typeparam>
+        /// <param name="instance">The instance which should be returned</param>
+        /// <exception cref="DependencyRegisterException">If the registration fails, it will throw an error</exception>
+        public void Override<T>(T instance) => Override(typeof(T), instance);
 
         /// <summary>
         /// Resolve a given service from the container. It will instantiate the concrete implementation
