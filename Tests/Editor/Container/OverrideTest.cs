@@ -65,5 +65,34 @@ namespace TheRealIronDuck.Ducktion.Editor.Tests.Editor.Container
             });
             Assert.That(error.Message, Does.Contain("Service is not registered. Use `register` to register the service"));
         }
+
+        [Test]
+        public void ItCanOverrideUsingTypeParameters()
+        {
+            container.Register<ISimpleInterface, SimpleService>();
+
+            var service = container.Resolve<ISimpleInterface>();
+            Assert.IsInstanceOf<SimpleService>(service);
+
+            container.Override(typeof(ISimpleInterface), typeof(SecondSimpleService));
+
+            var secondService = container.Resolve<ISimpleInterface>();
+            Assert.IsInstanceOf<SecondSimpleService>(secondService);
+        }
+
+        [Test]
+        public void ItThrowsAnExceptionIfTheServiceKeyDoesntExtendTheKeyTypeWhenUsingParameters()
+        {
+            container.Register<ISimpleInterface, SimpleService>();
+
+            var error = Assert.Throws<DependencyRegisterException>(() =>
+            {
+                container.Override(typeof(ISimpleInterface), typeof(AnotherService));
+            });
+            
+            Assert.That(error.Message, Does.Contain(
+                $"Service {typeof(AnotherService)} does not extend {typeof(ISimpleInterface)}"
+            ));
+        }
     }
 }
