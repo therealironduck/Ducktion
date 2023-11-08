@@ -138,30 +138,29 @@ namespace TheRealIronDuck.Ducktion
         }
 
         /// <summary>
-        /// Register a new service. The service type is used as the key and the concrete implementation.
-        /// The service must not be abstract or an enum.
-        /// </summary>
-        /// <typeparam name="T">The type which should be registered</typeparam>
-        /// <exception cref="DependencyRegisterException">If the registration fails, it will throw an error</exception>
-        public void Register<T>() => Register<T, T>();
-
-        /// <summary>
         /// Register a new service for a given type. The service must be the same as the type, or a child of it.
         /// For for type it could be an interface with the service being the concrete implementation.
         ///
         /// The service itself must not be abstract or an enum.
         /// </summary>
-        /// <typeparam name="TKey">The type which gets registered</typeparam>
-        /// <typeparam name="TService">The concrete implementation type</typeparam>
+        /// <param name="keyType">The type which gets registered</param>
+        /// <param name="serviceType">The concrete implementation type</param>
         /// <exception cref="DependencyRegisterException">If the registration fails, it will throw an error</exception>
-        public void Register<TKey, TService>() where TService : TKey
+        public void Register(Type keyType, Type serviceType)
         {
-            var keyType = typeof(TKey);
-            var serviceType = typeof(TService);
+            if (!keyType.IsAssignableFrom(serviceType))
+            {
+                _logger.Log(LogLevel.Error, $"Service {serviceType} does not extend {keyType}");
+
+                throw new DependencyRegisterException(
+                    keyType,
+                    $"Service {serviceType} does not extend {keyType}"
+                );
+            }
 
             ValidateService(keyType, serviceType);
 
-            if (_services.ContainsKey(typeof(TKey)))
+            if (_services.ContainsKey(keyType))
             {
                 _logger.Log(LogLevel.Error, $"Service {keyType} is already registered");
 
@@ -173,6 +172,55 @@ namespace TheRealIronDuck.Ducktion
 
             _services.Add(keyType, serviceType);
             _logger.Log(LogLevel.Debug, $"Registered service: {keyType} => {serviceType}");
+        }
+        
+        /// <summary>
+        /// Register a new service. The service type is used as the key and the concrete implementation.
+        /// The service must not be abstract or an enum.
+        /// </summary>
+        /// <param name="type">The type which should be registered</param>
+        /// <exception cref="DependencyRegisterException">If the registration fails, it will throw an error</exception>
+        public void Register(Type type) => Register(type, type);
+
+        /// <summary>
+        /// Register a new service. The service type is used as the key and the concrete implementation.
+        /// The service must not be abstract or an enum.
+        /// </summary>
+        /// <typeparam name="T">The type which should be registered</typeparam>
+        /// <exception cref="DependencyRegisterException">If the registration fails, it will throw an error</exception>
+        public void Register<T>() => Register(typeof(T), typeof(T));
+
+        /// <summary>
+        /// Register a new service for a given type. The service must be the same as the type, or a child of it.
+        /// For for type it could be an interface with the service being the concrete implementation.
+        ///
+        /// The service itself must not be abstract or an enum.
+        /// </summary>
+        /// <typeparam name="TKey">The type which gets registered</typeparam>
+        /// <typeparam name="TService">The concrete implementation type</typeparam>
+        /// <exception cref="DependencyRegisterException">If the registration fails, it will throw an error</exception>
+        public void Register<TKey, TService>() where TService : TKey => Register(typeof(TKey), typeof(TService));
+
+        /// <summary>
+        /// Register a new service and its instance. The service type is used as the key and the concrete implementation.
+        /// The instance will be registered as a singleton.
+        /// </summary>
+        /// <param name="instance">The instance which should be returned</param>
+        /// <typeparam name="T">The type which should be registered</typeparam>
+        /// <exception cref="DependencyRegisterException">If the registration fails, it will throw an error</exception>
+        public void Register<T>(T instance) => Register(typeof(T), instance);
+
+        /// <summary>
+        /// Register a new service and its instance. The service type is used as the key and the concrete implementation.
+        /// The instance will be registered as a singleton.
+        /// </summary>
+        /// <param name="type">The type which should be registered</param>
+        /// <param name="instance">The instance which should be returned</param>
+        /// <exception cref="DependencyRegisterException">If the registration fails, it will throw an error</exception>
+        public void Register(Type type, object instance)
+        {
+            Register(type, instance.GetType());
+            _instances.Add(type, instance);
         }
 
         /// <summary>
