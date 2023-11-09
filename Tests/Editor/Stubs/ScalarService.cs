@@ -2,9 +2,11 @@
 {
     public class ScalarService
     {
-        public ScalarService(int a)
+        public int Value;
+        
+        public ScalarService(int value)
         {
-            
+            Value = value;
         }
     }
 }

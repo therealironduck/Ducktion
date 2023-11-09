@@ -229,6 +229,27 @@ namespace TheRealIronDuck.Ducktion
             definition.Instance = instance;
         }
 
+        public void Register<T>(Func<T> callback)
+        {
+            Register(typeof(T), typeof(T));
+            
+            var type = typeof(T);
+            if (!_services.TryGetValue(type, out var definition))
+            {
+                _logger.Log(LogLevel.Error, $"Something went wrong with registering {type}");
+
+                throw new DependencyRegisterException(
+                    type,
+                    $"Something went wrong with registering {type}"
+                );
+            }
+
+            // Since the definition requires a Func<object>, we can't simply pass the callback
+            // directly. Instead we wrap the callback into another callback. Quite hacky, but
+            // it is what it is. 
+            definition.Callback = () => callback();
+        }
+
         /// <summary>
         /// Override any registered service with another implementation. Any singleton instance for this type
         /// will be cleared as well.
@@ -395,6 +416,9 @@ namespace TheRealIronDuck.Ducktion
                 return singleton.Instance;
             }
 
+            // TODO: Continue here -> Check if the callback is set and then run it
+            // Ensure that the new value is stored as a singleton
+            
             var targetType = type;
             var isAutoResolved = true;
             if (_services.TryGetValue(type, out var realType))

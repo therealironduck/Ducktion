@@ -7,6 +7,7 @@ namespace TheRealIronDuck.Ducktion
     {
         public readonly Type ServiceType;
         [CanBeNull] public object Instance;
+        [CanBeNull] public Func<object> Callback;
 
         public ServiceDefinition(Type serviceType)
         {
