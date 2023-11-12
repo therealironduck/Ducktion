@@ -204,7 +204,7 @@ namespace TheRealIronDuck.Ducktion.Editor.Tests.Editor
 
             logger.AssertHasMessage(
                 LogLevel.Error,
-                $"Service {typeof(ScalarService)} cant resolve parameter: a"
+                $"Service {typeof(ScalarService)} cant resolve parameter: value"
             );
         }
         

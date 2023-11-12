@@ -62,7 +62,7 @@ namespace TheRealIronDuck.Ducktion.Editor.Tests.Editor.Container
             var error = Assert.Throws<DependencyResolveException>(
                 () => container.Resolve<ScalarService>()
             );
-            Assert.That(error.Message, Does.Contain("Parameter `a` could not be resolved"));
+            Assert.That(error.Message, Does.Contain("Parameter `value` could not be resolved"));
         }
 
         [Test]
