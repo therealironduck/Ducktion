@@ -56,20 +56,16 @@ namespace TheRealIronDuck.Ducktion
 
         /// <summary>
         /// This variable contains all registered service references. The key is for example the interface
-        /// with the value being the concrete implementation type. In a lot of cases both key and value
-        /// can be the same type.
+        /// with the value being the service definition. The service definition holds the real type, - in a
+        /// lot of cases both key and value can be the same type. It also contains the singleton instances
+        /// and other relevant data to resolve the service.
         ///
         /// By default we register our own logger, so that we can log all events happening.
         /// </summary>
-        private readonly Dictionary<Type, Type> _services = new()
+        private readonly Dictionary<Type, ServiceDefinition> _services = new()
         {
-            { typeof(DucktionLogger), typeof(DucktionLogger) }
+            { typeof(DucktionLogger), new ServiceDefinition(typeof(DucktionLogger)) }
         };
-
-        /// <summary>
-        /// This dictionary stores every resolved instance so that it can be returned as a singleton.
-        /// </summary>
-        private readonly Dictionary<Type, object> _instances = new();
 
         /// <summary>
         /// A reference to the logger instance. This is used to log all events happening in the container.
@@ -148,7 +144,7 @@ namespace TheRealIronDuck.Ducktion
         /// <exception cref="DependencyRegisterException">If the registration fails, it will throw an error</exception>
         public void Register(Type keyType, Type serviceType)
         {
-            if (!keyType.IsAssignableFrom(serviceType))
+            if (!keyType.IsAssignableFrom(serviceType) && serviceType != typeof(object))
             {
                 _logger.Log(LogLevel.Error, $"Service {serviceType} does not extend {keyType}");
 
@@ -170,10 +166,10 @@ namespace TheRealIronDuck.Ducktion
                 );
             }
 
-            _services.Add(keyType, serviceType);
+            _services.Add(keyType, new ServiceDefinition(serviceType));
             _logger.Log(LogLevel.Debug, $"Registered service: {keyType} => {serviceType}");
         }
-        
+
         /// <summary>
         /// Register a new service. The service type is used as the key and the concrete implementation.
         /// The service must not be abstract or an enum.
@@ -220,8 +216,60 @@ namespace TheRealIronDuck.Ducktion
         public void Register(Type type, object instance)
         {
             Register(type, instance.GetType());
-            _instances.Add(type, instance);
+            if (!_services.TryGetValue(type, out var definition))
+            {
+                _logger.Log(LogLevel.Error, $"Something went wrong with registering {type}");
+
+                throw new DependencyRegisterException(
+                    type,
+                    $"Something went wrong with registering {type}"
+                );
+            }
+
+            definition.Instance = instance;
         }
+
+        /// <summary>
+        /// Register a callback which gets called on resolve. This is useful if you want to resolve
+        /// a service which requires some parameters. The callback will be called on resolve and
+        /// be stored as a singleton.
+        /// more information.
+        /// </summary>
+        /// <param name="type">The type which should be registered</param>
+        /// <param name="callback">The callback which gets called on resolve. Must return an instance</param>
+        /// <exception cref="DependencyRegisterException">If the registration fails, it will throw an error</exception>
+        public void Register<T>(Type type, Func<T> callback)
+        {
+            var serviceType = callback.Method.ReturnType.IsAbstract ? typeof(object) : type;
+            Register(type, serviceType);
+
+            if (!_services.TryGetValue(type, out var definition))
+            {
+                _logger.Log(LogLevel.Error, $"Something went wrong with registering {type}");
+
+                throw new DependencyRegisterException(
+                    type,
+                    $"Something went wrong with registering {type}"
+                );
+            }
+
+            definition.Callback = () => callback();
+        }
+
+        /// <summary>
+        /// Register a callback which gets called on resolve. This is useful if you want to resolve
+        /// a service which requires some parameters. The callback will be called on resolve and
+        /// be stored as a singleton.
+        /// more information.
+        ///
+        /// Since the definition requires a Func(object), we can't simply pass the callback
+        /// directly. Instead we wrap the callback into another callback. Quite hacky, but
+        /// it is what it is.
+        /// </summary>
+        /// <typeparam name="T">The type which should be registered</typeparam>
+        /// <param name="callback">The callback which gets called on resolve. Must return an instance</param>
+        /// <exception cref="DependencyRegisterException">If the registration fails, it will throw an error</exception>
+        public void Register<T>(Func<T> callback) => Register(typeof(T), callback);
 
         /// <summary>
         /// Override any registered service with another implementation. Any singleton instance for this type
@@ -243,7 +291,7 @@ namespace TheRealIronDuck.Ducktion
                     $"Service {serviceType} does not extend {keyType}"
                 );
             }
-            
+
             ValidateService(keyType, serviceType);
 
             if (!_services.ContainsKey(keyType))
@@ -256,8 +304,7 @@ namespace TheRealIronDuck.Ducktion
                 );
             }
 
-            _services[keyType] = serviceType;
-            _instances.Remove(keyType);
+            _services[keyType] = new ServiceDefinition(serviceType);
 
             _logger.Log(LogLevel.Debug, $"Overridden service: {keyType} => {serviceType}");
         }
@@ -283,7 +330,17 @@ namespace TheRealIronDuck.Ducktion
         public void Override(Type type, object instance)
         {
             Override(type, instance.GetType());
-            _instances.Add(type, instance);
+            if (!_services.TryGetValue(instance.GetType(), out var definition))
+            {
+                _logger.Log(LogLevel.Error, $"Something went wrong with overriding {type}");
+
+                throw new DependencyRegisterException(
+                    type,
+                    $"Something went wrong with overriding {type}"
+                );
+            }
+
+            definition.Instance = instance;
         }
 
         /// <summary>
@@ -294,6 +351,44 @@ namespace TheRealIronDuck.Ducktion
         /// <param name="instance">The instance which should be returned</param>
         /// <exception cref="DependencyRegisterException">If the registration fails, it will throw an error</exception>
         public void Override<T>(T instance) => Override(typeof(T), instance);
+
+        /// <summary>
+        /// Override a service with a callback which gets called on resolve. This is useful if you
+        /// want to resolve a service which requires some parameters. The callback will be called on
+        /// resolve and be stored as a singleton.
+        /// for more information.
+        /// </summary>
+        /// <param name="keyType">The type which gets registered</param>
+        /// <param name="callback">The callback which gets called on resolve. Must return an instance</param>
+        /// <exception cref="DependencyRegisterException">If the override fails, it will throw an error</exception>
+        public void Override(Type keyType, Func<object> callback)
+        {
+            if (!_services.ContainsKey(keyType))
+            {
+                _logger.Log(LogLevel.Error, $"Service {keyType} is not registered");
+
+                throw new DependencyRegisterException(
+                    keyType,
+                    "Service is not registered. Use `register` to register the service"
+                );
+            }
+
+            _services[keyType].Instance = null;
+            _services[keyType].Callback = callback;
+
+            _logger.Log(LogLevel.Debug, $"Overridden service: {keyType} with callback");
+        }
+
+        /// <summary>
+        /// Override a service with a callback which gets called on resolve. This is useful if you
+        /// want to resolve a service which requires some parameters. The callback will be called on
+        /// resolve and be stored as a singleton.
+        /// for more information.
+        /// </summary>
+        /// <typeparam name="T">The type which gets registered</typeparam>
+        /// <param name="callback">The callback which gets called on resolve. Must return an instance</param>
+        /// <exception cref="DependencyRegisterException">If the override fails, it will throw an error</exception>
+        public void Override<T>(Func<T> callback) => Override(typeof(T), () => callback());
 
         /// <summary>
         /// Resolve a given service from the container. It will instantiate the concrete implementation
@@ -333,9 +428,7 @@ namespace TheRealIronDuck.Ducktion
             _logger.Log(LogLevel.Info, "Clearing container");
 
             _services.Clear();
-            _services.Add(typeof(DucktionLogger), typeof(DucktionLogger));
-
-            _instances.Clear();
+            _services.Add(typeof(DucktionLogger), new ServiceDefinition(typeof(DucktionLogger)));
 
             Reinitialize();
         }
@@ -348,7 +441,11 @@ namespace TheRealIronDuck.Ducktion
         {
             _logger.Log(LogLevel.Info, "Resetting container");
 
-            _instances.Clear();
+            foreach (var service in _services)
+            {
+                service.Value.Instance = null;
+            }
+
             Reinitialize();
         }
 
@@ -373,9 +470,17 @@ namespace TheRealIronDuck.Ducktion
                 throw new DependencyResolveException(type, "Service is not registered");
             }
 
-            if (_instances.TryGetValue(type, out var singleton))
+            if (_services.TryGetValue(type, out var singleton) && singleton.Instance != null)
             {
-                return singleton;
+                return singleton.Instance;
+            }
+
+            if (singleton?.Callback != null)
+            {
+                var result = singleton.Callback();
+                StoreAsSingleton(type, result);
+
+                return result;
             }
 
             var targetType = type;
@@ -383,7 +488,7 @@ namespace TheRealIronDuck.Ducktion
             if (_services.TryGetValue(type, out var realType))
             {
                 isAutoResolved = false;
-                targetType = realType;
+                targetType = realType.ServiceType;
             }
 
             var constructors = targetType.GetConstructors();
@@ -433,7 +538,7 @@ namespace TheRealIronDuck.Ducktion
 
             if (!isAutoResolved || autoResolveSingletonMode == SingletonMode.Singleton)
             {
-                _instances.Add(type, instance);
+                StoreAsSingleton(type, instance);
             }
 
             _logger?.Log(
@@ -442,6 +547,25 @@ namespace TheRealIronDuck.Ducktion
             );
 
             return instance;
+        }
+
+        /// <summary>
+        /// Register a given instance as a singleton for the given type.
+        /// If the type is already registered, it will override the instance.
+        /// Otherwise it will create a new service definition.
+        /// </summary>
+        /// <param name="type">The type which should be registered</param>
+        /// <param name="instance">The instance which should be stored as a singleton</param>
+        private void StoreAsSingleton(Type type, object instance)
+        {
+            if (_services.TryGetValue(type, out var definition))
+            {
+                definition.Instance = instance;
+                _services[type] = definition;
+                return;
+            }
+
+            _services.Add(type, new ServiceDefinition(type) { Instance = instance });
         }
 
         private void ValidateService(Type keyType, Type serviceType)
