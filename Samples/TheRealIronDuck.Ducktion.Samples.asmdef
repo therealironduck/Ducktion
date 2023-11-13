@@ -1,7 +1,7 @@
 {
     "name": "TheRealIronDuck.Ducktion.Samples",
     "rootNamespace": "TheRealIronDuck.Ducktion.Samples",
-    "references": [],
+    "references": ["GUID:db7d8374cc927a843a7eaca5bc209736"],
     "includePlatforms": [],
     "excludePlatforms": [],
     "allowUnsafeCode": false,
