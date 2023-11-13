@@ -31,6 +31,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - The container can automatically resolve dependencies, even if they are not registered
   - This option can be toggled in the configuration
   - Optionally it can be configured if auto resolved services are stored as singletons
+- Services can be marked as lazy or non lazy
+  - Non lazy services will automatically be resolved when the container initializes
+  - Added methods to service definition:
+    - `SetLazyMode(lazyMode)` to specify the lazy mode
+    - `Lazy()` to mark a service as lazy (Alias for `SetLazyMode(LazyMode.Lazy)`)
+    - `NonLazy()` to mark a service as non-lazy (Alias for `SetLazyMode(LazyMode.NonLazy)`)
 - Services can be registered in configurators
   - Either by using the `IDiConfigurator` interface and manually registering the configurator
   - Or by using the `MonoDiConfigurator` component and adding it to the containers inspector

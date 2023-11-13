@@ -25,5 +25,16 @@ namespace TheRealIronDuck.Ducktion.Editor.Tests.Editor.Fakes
             
             throw new Exception($"Expected to find a log message with level {level} and message {message}");
         }
+        
+        public void AssertHasNoMessage(LogLevel level, string message)
+        {
+            foreach (var (logLevel, logMessage) in Messages)
+            {
+                if (logLevel == level && logMessage == message)
+                {
+                    throw new Exception($"Expected to not find a log message with level {level} and message {message}");
+                }
+            }
+        }
     }
 }

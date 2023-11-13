@@ -52,6 +52,12 @@ namespace TheRealIronDuck.Ducktion
         [SerializeField] private SingletonMode autoResolveSingletonMode = SingletonMode.Singleton;
 
         /// <summary>
+        /// Specify the default lazy mode any service should be registered with. This will only be used
+        /// if no other lazy mode is specified during registration.
+        /// </summary>
+        [SerializeField] private LazyMode defaultLazyMode = LazyMode.Lazy;
+
+        /// <summary>
         /// All the default Mono configurators which will be loaded when the container is initialized.
         /// In addition to these, you can also add your own configurators using the `AddConfigurator`
         /// method.
@@ -133,6 +139,8 @@ namespace TheRealIronDuck.Ducktion
                 configurator.Register(this);
             });
 
+            InitializeNonLazyServices();
+
             _logger.Log(LogLevel.Info, "Reinitialized container");
         }
 
@@ -143,15 +151,18 @@ namespace TheRealIronDuck.Ducktion
         /// <param name="newLevel">The log level</param>
         /// <param name="newEnableAutoResolve">Should auto resolve be enabled?</param>
         /// <param name="newAutoResolveSingletonMode">The singleton mode of auto-resolved services</param>
+        /// <param name="newDefaultLazyMode">The default lazy mode</param>
         public void Configure(
             LogLevel newLevel = LogLevel.Error,
             bool newEnableAutoResolve = true,
-            SingletonMode newAutoResolveSingletonMode = SingletonMode.Singleton
+            SingletonMode newAutoResolveSingletonMode = SingletonMode.Singleton,
+            LazyMode newDefaultLazyMode = LazyMode.Lazy
         )
         {
             logLevel = newLevel;
             enableAutoResolve = newEnableAutoResolve;
             autoResolveSingletonMode = newAutoResolveSingletonMode;
+            defaultLazyMode = newDefaultLazyMode;
 
             Reinitialize();
         }
@@ -165,7 +176,7 @@ namespace TheRealIronDuck.Ducktion
         /// <param name="keyType">The type which gets registered</param>
         /// <param name="serviceType">The concrete implementation type</param>
         /// <exception cref="DependencyRegisterException">If the registration fails, it will throw an error</exception>
-        public void Register(Type keyType, Type serviceType)
+        public ServiceDefinition Register(Type keyType, Type serviceType)
         {
             if (!keyType.IsAssignableFrom(serviceType) && serviceType != typeof(object))
             {
@@ -189,8 +200,11 @@ namespace TheRealIronDuck.Ducktion
                 );
             }
 
-            _services.Add(keyType, new ServiceDefinition(serviceType));
+            var serviceDefinition = new ServiceDefinition(serviceType);
+            _services.Add(keyType, serviceDefinition);
             _logger.Log(LogLevel.Debug, $"Registered service: {keyType} => {serviceType}");
+
+            return serviceDefinition;
         }
 
         /// <summary>
@@ -199,7 +213,7 @@ namespace TheRealIronDuck.Ducktion
         /// </summary>
         /// <param name="type">The type which should be registered</param>
         /// <exception cref="DependencyRegisterException">If the registration fails, it will throw an error</exception>
-        public void Register(Type type) => Register(type, type);
+        public ServiceDefinition Register(Type type) => Register(type, type);
 
         /// <summary>
         /// Register a new service. The service type is used as the key and the concrete implementation.
@@ -207,7 +221,7 @@ namespace TheRealIronDuck.Ducktion
         /// </summary>
         /// <typeparam name="T">The type which should be registered</typeparam>
         /// <exception cref="DependencyRegisterException">If the registration fails, it will throw an error</exception>
-        public void Register<T>() => Register(typeof(T), typeof(T));
+        public ServiceDefinition Register<T>() => Register(typeof(T), typeof(T));
 
         /// <summary>
         /// Register a new service for a given type. The service must be the same as the type, or a child of it.
@@ -218,7 +232,7 @@ namespace TheRealIronDuck.Ducktion
         /// <typeparam name="TKey">The type which gets registered</typeparam>
         /// <typeparam name="TService">The concrete implementation type</typeparam>
         /// <exception cref="DependencyRegisterException">If the registration fails, it will throw an error</exception>
-        public void Register<TKey, TService>() where TService : TKey => Register(typeof(TKey), typeof(TService));
+        public ServiceDefinition Register<TKey, TService>() where TService : TKey => Register(typeof(TKey), typeof(TService));
 
         /// <summary>
         /// Register a new service and its instance. The service type is used as the key and the concrete implementation.
@@ -227,7 +241,7 @@ namespace TheRealIronDuck.Ducktion
         /// <param name="instance">The instance which should be returned</param>
         /// <typeparam name="T">The type which should be registered</typeparam>
         /// <exception cref="DependencyRegisterException">If the registration fails, it will throw an error</exception>
-        public void Register<T>(T instance) => Register(typeof(T), instance);
+        public ServiceDefinition Register<T>(T instance) => Register(typeof(T), instance);
 
         /// <summary>
         /// Register a new service and its instance. The service type is used as the key and the concrete implementation.
@@ -236,20 +250,12 @@ namespace TheRealIronDuck.Ducktion
         /// <param name="type">The type which should be registered</param>
         /// <param name="instance">The instance which should be returned</param>
         /// <exception cref="DependencyRegisterException">If the registration fails, it will throw an error</exception>
-        public void Register(Type type, object instance)
+        public ServiceDefinition Register(Type type, object instance)
         {
-            Register(type, instance.GetType());
-            if (!_services.TryGetValue(type, out var definition))
-            {
-                _logger.Log(LogLevel.Error, $"Something went wrong with registering {type}");
-
-                throw new DependencyRegisterException(
-                    type,
-                    $"Something went wrong with registering {type}"
-                );
-            }
-
+            var definition = Register(type, instance.GetType());
             definition.Instance = instance;
+
+            return definition;
         }
 
         /// <summary>
@@ -261,22 +267,13 @@ namespace TheRealIronDuck.Ducktion
         /// <param name="type">The type which should be registered</param>
         /// <param name="callback">The callback which gets called on resolve. Must return an instance</param>
         /// <exception cref="DependencyRegisterException">If the registration fails, it will throw an error</exception>
-        public void Register<T>(Type type, Func<T> callback)
+        public ServiceDefinition Register<T>(Type type, Func<T> callback)
         {
             var serviceType = callback.Method.ReturnType.IsAbstract ? typeof(object) : type;
-            Register(type, serviceType);
-
-            if (!_services.TryGetValue(type, out var definition))
-            {
-                _logger.Log(LogLevel.Error, $"Something went wrong with registering {type}");
-
-                throw new DependencyRegisterException(
-                    type,
-                    $"Something went wrong with registering {type}"
-                );
-            }
-
+            var definition = Register(type, serviceType);
             definition.Callback = () => callback();
+
+            return definition;
         }
 
         /// <summary>
@@ -292,7 +289,7 @@ namespace TheRealIronDuck.Ducktion
         /// <typeparam name="T">The type which should be registered</typeparam>
         /// <param name="callback">The callback which gets called on resolve. Must return an instance</param>
         /// <exception cref="DependencyRegisterException">If the registration fails, it will throw an error</exception>
-        public void Register<T>(Func<T> callback) => Register(typeof(T), callback);
+        public ServiceDefinition Register<T>(Func<T> callback) => Register(typeof(T), callback);
 
         /// <summary>
         /// Override any registered service with another implementation. Any singleton instance for this type
@@ -303,7 +300,7 @@ namespace TheRealIronDuck.Ducktion
         /// <param name="keyType">The type which gets registered</param>
         /// <param name="serviceType">The concrete implementation type</param>
         /// <exception cref="DependencyRegisterException">If the override fails, it will throw an error</exception>
-        public void Override(Type keyType, Type serviceType)
+        public ServiceDefinition Override(Type keyType, Type serviceType)
         {
             if (!keyType.IsAssignableFrom(serviceType))
             {
@@ -330,6 +327,8 @@ namespace TheRealIronDuck.Ducktion
             _services[keyType] = new ServiceDefinition(serviceType);
 
             _logger.Log(LogLevel.Debug, $"Overridden service: {keyType} => {serviceType}");
+
+            return _services[keyType];
         }
 
         /// <summary>
@@ -341,7 +340,7 @@ namespace TheRealIronDuck.Ducktion
         /// <typeparam name="TKey">The type which gets registered</typeparam>
         /// <typeparam name="TService">The concrete implementation type</typeparam>
         /// <exception cref="DependencyRegisterException">If the override fails, it will throw an error</exception>
-        public void Override<TKey, TService>() where TService : TKey => Override(typeof(TKey), typeof(TService));
+        public ServiceDefinition Override<TKey, TService>() where TService : TKey => Override(typeof(TKey), typeof(TService));
 
         /// <summary>
         /// Override any registered service with a specific instance. The instance will be registered as a singleton
@@ -350,20 +349,12 @@ namespace TheRealIronDuck.Ducktion
         /// <param name="type">The type which gets registered</param>
         /// <param name="instance">The instance which should be returned</param>
         /// <exception cref="DependencyRegisterException">If the registration fails, it will throw an error</exception>
-        public void Override(Type type, object instance)
+        public ServiceDefinition Override(Type type, object instance)
         {
-            Override(type, instance.GetType());
-            if (!_services.TryGetValue(instance.GetType(), out var definition))
-            {
-                _logger.Log(LogLevel.Error, $"Something went wrong with overriding {type}");
-
-                throw new DependencyRegisterException(
-                    type,
-                    $"Something went wrong with overriding {type}"
-                );
-            }
-
+            var definition = Override(type, instance.GetType());
             definition.Instance = instance;
+            
+            return definition;
         }
 
         /// <summary>
@@ -373,7 +364,7 @@ namespace TheRealIronDuck.Ducktion
         /// <typeparam name="T">The type which gets registered</typeparam>
         /// <param name="instance">The instance which should be returned</param>
         /// <exception cref="DependencyRegisterException">If the registration fails, it will throw an error</exception>
-        public void Override<T>(T instance) => Override(typeof(T), instance);
+        public ServiceDefinition Override<T>(T instance) => Override(typeof(T), instance);
 
         /// <summary>
         /// Override a service with a callback which gets called on resolve. This is useful if you
@@ -384,7 +375,7 @@ namespace TheRealIronDuck.Ducktion
         /// <param name="keyType">The type which gets registered</param>
         /// <param name="callback">The callback which gets called on resolve. Must return an instance</param>
         /// <exception cref="DependencyRegisterException">If the override fails, it will throw an error</exception>
-        public void Override(Type keyType, Func<object> callback)
+        public ServiceDefinition Override(Type keyType, Func<object> callback)
         {
             if (!_services.ContainsKey(keyType))
             {
@@ -400,6 +391,8 @@ namespace TheRealIronDuck.Ducktion
             _services[keyType].Callback = callback;
 
             _logger.Log(LogLevel.Debug, $"Overridden service: {keyType} with callback");
+            
+            return _services[keyType];
         }
 
         /// <summary>
@@ -411,7 +404,7 @@ namespace TheRealIronDuck.Ducktion
         /// <typeparam name="T">The type which gets registered</typeparam>
         /// <param name="callback">The callback which gets called on resolve. Must return an instance</param>
         /// <exception cref="DependencyRegisterException">If the override fails, it will throw an error</exception>
-        public void Override<T>(Func<T> callback) => Override(typeof(T), () => callback());
+        public ServiceDefinition Override<T>(Func<T> callback) => Override(typeof(T), () => callback());
 
         /// <summary>
         /// Resolve a given service from the container. It will instantiate the concrete implementation
@@ -617,6 +610,20 @@ namespace TheRealIronDuck.Ducktion
 
                 throw new DependencyRegisterException(keyType, "Service is an enum");
             }
+        }
+
+        /// <summary>
+        /// This will initialize all non-lazy services. If a service has no lazy mode specified, it will
+        /// default to the `defaultLazyMode` variable.
+        /// </summary>
+        private void InitializeNonLazyServices()
+        {
+            (
+                _services.Where(service =>
+                    (!service.Value.LazyMode.HasValue && defaultLazyMode == LazyMode.NonLazy) ||
+                    service.Value?.LazyMode == LazyMode.NonLazy
+                ).Select(service => service.Key)
+            ).ToList().ForEach(type => Resolve(type));
         }
 
         #endregion
