@@ -300,7 +300,7 @@ namespace TheRealIronDuck.Ducktion
         /// <param name="keyType">The type which gets registered</param>
         /// <param name="serviceType">The concrete implementation type</param>
         /// <exception cref="DependencyRegisterException">If the override fails, it will throw an error</exception>
-        public void Override(Type keyType, Type serviceType)
+        public ServiceDefinition Override(Type keyType, Type serviceType)
         {
             if (!keyType.IsAssignableFrom(serviceType))
             {
@@ -327,6 +327,8 @@ namespace TheRealIronDuck.Ducktion
             _services[keyType] = new ServiceDefinition(serviceType);
 
             _logger.Log(LogLevel.Debug, $"Overridden service: {keyType} => {serviceType}");
+
+            return _services[keyType];
         }
 
         /// <summary>
@@ -338,7 +340,7 @@ namespace TheRealIronDuck.Ducktion
         /// <typeparam name="TKey">The type which gets registered</typeparam>
         /// <typeparam name="TService">The concrete implementation type</typeparam>
         /// <exception cref="DependencyRegisterException">If the override fails, it will throw an error</exception>
-        public void Override<TKey, TService>() where TService : TKey => Override(typeof(TKey), typeof(TService));
+        public ServiceDefinition Override<TKey, TService>() where TService : TKey => Override(typeof(TKey), typeof(TService));
 
         /// <summary>
         /// Override any registered service with a specific instance. The instance will be registered as a singleton
@@ -347,20 +349,12 @@ namespace TheRealIronDuck.Ducktion
         /// <param name="type">The type which gets registered</param>
         /// <param name="instance">The instance which should be returned</param>
         /// <exception cref="DependencyRegisterException">If the registration fails, it will throw an error</exception>
-        public void Override(Type type, object instance)
+        public ServiceDefinition Override(Type type, object instance)
         {
-            Override(type, instance.GetType());
-            if (!_services.TryGetValue(instance.GetType(), out var definition))
-            {
-                _logger.Log(LogLevel.Error, $"Something went wrong with overriding {type}");
-
-                throw new DependencyRegisterException(
-                    type,
-                    $"Something went wrong with overriding {type}"
-                );
-            }
-
+            var definition = Override(type, instance.GetType());
             definition.Instance = instance;
+            
+            return definition;
         }
 
         /// <summary>
@@ -370,7 +364,7 @@ namespace TheRealIronDuck.Ducktion
         /// <typeparam name="T">The type which gets registered</typeparam>
         /// <param name="instance">The instance which should be returned</param>
         /// <exception cref="DependencyRegisterException">If the registration fails, it will throw an error</exception>
-        public void Override<T>(T instance) => Override(typeof(T), instance);
+        public ServiceDefinition Override<T>(T instance) => Override(typeof(T), instance);
 
         /// <summary>
         /// Override a service with a callback which gets called on resolve. This is useful if you
@@ -381,7 +375,7 @@ namespace TheRealIronDuck.Ducktion
         /// <param name="keyType">The type which gets registered</param>
         /// <param name="callback">The callback which gets called on resolve. Must return an instance</param>
         /// <exception cref="DependencyRegisterException">If the override fails, it will throw an error</exception>
-        public void Override(Type keyType, Func<object> callback)
+        public ServiceDefinition Override(Type keyType, Func<object> callback)
         {
             if (!_services.ContainsKey(keyType))
             {
@@ -397,6 +391,8 @@ namespace TheRealIronDuck.Ducktion
             _services[keyType].Callback = callback;
 
             _logger.Log(LogLevel.Debug, $"Overridden service: {keyType} with callback");
+            
+            return _services[keyType];
         }
 
         /// <summary>
@@ -408,7 +404,7 @@ namespace TheRealIronDuck.Ducktion
         /// <typeparam name="T">The type which gets registered</typeparam>
         /// <param name="callback">The callback which gets called on resolve. Must return an instance</param>
         /// <exception cref="DependencyRegisterException">If the override fails, it will throw an error</exception>
-        public void Override<T>(Func<T> callback) => Override(typeof(T), () => callback());
+        public ServiceDefinition Override<T>(Func<T> callback) => Override(typeof(T), () => callback());
 
         /// <summary>
         /// Resolve a given service from the container. It will instantiate the concrete implementation

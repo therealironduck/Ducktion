@@ -112,8 +112,55 @@ namespace TheRealIronDuck.Ducktion.Editor.Tests.Editor.Container
             );
         }
 
-        // TODO: Test override
-        // TODO: Test every override method syntax
+        [Test]
+        public void ItCanMarkAServiceAfterwardsAsLazy()
+        {
+            var logger = FakeLogger();
+
+            container.Register<ServiceWithLogger>().Lazy();
+            container.Override<ServiceWithLogger, ServiceWithLogger>().NonLazy();
+            
+            container.Reinitialize();
+
+            logger.AssertHasMessage(LogLevel.Debug, "Hello from ServiceWithLogger!");
+        }
+        
+        [Test]
+        public void ItReturnsTheServiceDefinitionForEveryPossibleOverrideSyntax()
+        {
+            container.Register<ISimpleInterface, SimpleService>();
+            
+            Assert.That(
+                container.Override(typeof(ISimpleInterface), typeof(SimpleService)),
+                Is.InstanceOf<ServiceDefinition>()
+            );
+            
+            Assert.That(
+                container.Override<ISimpleInterface, SimpleService>(),
+                Is.InstanceOf<ServiceDefinition>()
+            );
+            
+            Assert.That(
+                container.Override(typeof(ISimpleInterface), new SimpleService()),
+                Is.InstanceOf<ServiceDefinition>()
+            );
+            
+            Assert.That(
+                container.Override<ISimpleInterface>(new SimpleService()),
+                Is.InstanceOf<ServiceDefinition>()
+            );
+            
+            Assert.That(
+                container.Override(typeof(ISimpleInterface), () => new SimpleService()),
+                Is.InstanceOf<ServiceDefinition>()
+            );
+            
+            Assert.That(
+                container.Override<ISimpleInterface>(() => new SimpleService()),
+                Is.InstanceOf<ServiceDefinition>()
+            );
+        }
+
         // TODO: Test chaining
     }
 }
