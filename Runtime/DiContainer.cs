@@ -213,7 +213,7 @@ namespace TheRealIronDuck.Ducktion
         /// </summary>
         /// <param name="type">The type which should be registered</param>
         /// <exception cref="DependencyRegisterException">If the registration fails, it will throw an error</exception>
-        public void Register(Type type) => Register(type, type);
+        public ServiceDefinition Register(Type type) => Register(type, type);
 
         /// <summary>
         /// Register a new service. The service type is used as the key and the concrete implementation.
@@ -232,7 +232,7 @@ namespace TheRealIronDuck.Ducktion
         /// <typeparam name="TKey">The type which gets registered</typeparam>
         /// <typeparam name="TService">The concrete implementation type</typeparam>
         /// <exception cref="DependencyRegisterException">If the registration fails, it will throw an error</exception>
-        public void Register<TKey, TService>() where TService : TKey => Register(typeof(TKey), typeof(TService));
+        public ServiceDefinition Register<TKey, TService>() where TService : TKey => Register(typeof(TKey), typeof(TService));
 
         /// <summary>
         /// Register a new service and its instance. The service type is used as the key and the concrete implementation.
@@ -241,7 +241,7 @@ namespace TheRealIronDuck.Ducktion
         /// <param name="instance">The instance which should be returned</param>
         /// <typeparam name="T">The type which should be registered</typeparam>
         /// <exception cref="DependencyRegisterException">If the registration fails, it will throw an error</exception>
-        public void Register<T>(T instance) => Register(typeof(T), instance);
+        public ServiceDefinition Register<T>(T instance) => Register(typeof(T), instance);
 
         /// <summary>
         /// Register a new service and its instance. The service type is used as the key and the concrete implementation.
@@ -250,20 +250,12 @@ namespace TheRealIronDuck.Ducktion
         /// <param name="type">The type which should be registered</param>
         /// <param name="instance">The instance which should be returned</param>
         /// <exception cref="DependencyRegisterException">If the registration fails, it will throw an error</exception>
-        public void Register(Type type, object instance)
+        public ServiceDefinition Register(Type type, object instance)
         {
-            Register(type, instance.GetType());
-            if (!_services.TryGetValue(type, out var definition))
-            {
-                _logger.Log(LogLevel.Error, $"Something went wrong with registering {type}");
-
-                throw new DependencyRegisterException(
-                    type,
-                    $"Something went wrong with registering {type}"
-                );
-            }
-
+            var definition = Register(type, instance.GetType());
             definition.Instance = instance;
+
+            return definition;
         }
 
         /// <summary>
@@ -275,22 +267,13 @@ namespace TheRealIronDuck.Ducktion
         /// <param name="type">The type which should be registered</param>
         /// <param name="callback">The callback which gets called on resolve. Must return an instance</param>
         /// <exception cref="DependencyRegisterException">If the registration fails, it will throw an error</exception>
-        public void Register<T>(Type type, Func<T> callback)
+        public ServiceDefinition Register<T>(Type type, Func<T> callback)
         {
             var serviceType = callback.Method.ReturnType.IsAbstract ? typeof(object) : type;
-            Register(type, serviceType);
-
-            if (!_services.TryGetValue(type, out var definition))
-            {
-                _logger.Log(LogLevel.Error, $"Something went wrong with registering {type}");
-
-                throw new DependencyRegisterException(
-                    type,
-                    $"Something went wrong with registering {type}"
-                );
-            }
-
+            var definition = Register(type, serviceType);
             definition.Callback = () => callback();
+
+            return definition;
         }
 
         /// <summary>
@@ -306,7 +289,7 @@ namespace TheRealIronDuck.Ducktion
         /// <typeparam name="T">The type which should be registered</typeparam>
         /// <param name="callback">The callback which gets called on resolve. Must return an instance</param>
         /// <exception cref="DependencyRegisterException">If the registration fails, it will throw an error</exception>
-        public void Register<T>(Func<T> callback) => Register(typeof(T), callback);
+        public ServiceDefinition Register<T>(Func<T> callback) => Register(typeof(T), callback);
 
         /// <summary>
         /// Override any registered service with another implementation. Any singleton instance for this type

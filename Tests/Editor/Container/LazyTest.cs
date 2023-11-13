@@ -19,12 +19,12 @@ namespace TheRealIronDuck.Ducktion.Editor.Tests.Editor.Container
             logger.AssertHasMessage(LogLevel.Debug, "Hello from ServiceWithLogger!");
             logger.AssertHasNoMessage(LogLevel.Debug, "Hello from SecondServiceWithLogger!");
         }
-        
+
         [Test]
         public void ItCanSetTheDefaultToNonLazy()
         {
             var logger = FakeLogger();
-            
+
             container.Configure(newDefaultLazyMode: LazyMode.NonLazy);
 
             container.Register<ServiceWithLogger>();
@@ -34,12 +34,12 @@ namespace TheRealIronDuck.Ducktion.Editor.Tests.Editor.Container
             logger.AssertHasMessage(LogLevel.Debug, "Hello from ServiceWithLogger!");
             logger.AssertHasMessage(LogLevel.Debug, "Hello from SecondServiceWithLogger!");
         }
-        
+
         [Test]
         public void ItCanSetTheDefaultToNonLazyButRegisterSpecificServicesAsLazy()
         {
             var logger = FakeLogger();
-            
+
             container.Configure(newDefaultLazyMode: LazyMode.NonLazy);
 
             container.Register<ServiceWithLogger>().Lazy();
@@ -49,12 +49,12 @@ namespace TheRealIronDuck.Ducktion.Editor.Tests.Editor.Container
             logger.AssertHasNoMessage(LogLevel.Debug, "Hello from ServiceWithLogger!");
             logger.AssertHasMessage(LogLevel.Debug, "Hello from SecondServiceWithLogger!");
         }
-        
+
         [Test]
         public void ItCanSetTheSpecificLazyModeWithoutANiceMethod()
         {
             var logger = FakeLogger();
-            
+
             container.Configure(newDefaultLazyMode: LazyMode.NonLazy);
 
             container.Register<ServiceWithLogger>().SetLazyMode(LazyMode.Lazy);
@@ -64,8 +64,54 @@ namespace TheRealIronDuck.Ducktion.Editor.Tests.Editor.Container
             logger.AssertHasNoMessage(LogLevel.Debug, "Hello from ServiceWithLogger!");
             logger.AssertHasMessage(LogLevel.Debug, "Hello from SecondServiceWithLogger!");
         }
-        
-        // TODO: Test every register method syntax
+
+        [Test]
+        public void ItReturnsTheServiceDefinitionForEveryPossibleRegisterSyntax()
+        {
+            Assert.That(
+                container.Register(typeof(ISimpleInterface), typeof(SimpleService)),
+                Is.InstanceOf<ServiceDefinition>()
+            );
+
+            Assert.That(
+                container.Register(typeof(AnotherService)),
+                Is.InstanceOf<ServiceDefinition>()
+            );
+
+            Assert.That(
+                container.Register<ScalarService>(),
+                Is.InstanceOf<ServiceDefinition>()
+            );
+
+            Assert.That(
+                container.Register<SimpleBaseClass, SimpleService>(),
+                Is.InstanceOf<ServiceDefinition>()
+            );
+
+            Assert.That(
+                container.Register<SimpleService>(new SimpleService()),
+                Is.InstanceOf<ServiceDefinition>()
+            );
+
+            Assert.That(
+                container.Register(typeof(SimpleServiceWithDependency),
+                    new SimpleServiceWithDependency(new AnotherService())),
+                Is.InstanceOf<ServiceDefinition>()
+            );
+            
+            container.Clear();
+            
+            Assert.That(
+                container.Register(typeof(SimpleService), () => new SimpleService()),
+                Is.InstanceOf<ServiceDefinition>()
+            );
+            
+            Assert.That(
+                container.Register<ISimpleInterface>(() => new SimpleService()),
+                Is.InstanceOf<ServiceDefinition>()
+            );
+        }
+
         // TODO: Test override
         // TODO: Test every override method syntax
         // TODO: Test chaining
