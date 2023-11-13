@@ -27,9 +27,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Added method `Resolve(Type)` to resolve a service
   - Added method `Clear` to remove any registered service and singleton instance
   - Added method `ResetSingletons` to remove any singleton instance
+  - Added method `AddConfigurator(configurator)` to register a configurator
 - The container can automatically resolve dependencies, even if they are not registered
   - This option can be toggled in the configuration
   - Optionally it can be configured if auto resolved services are stored as singletons
+- Services can be registered in configurators
+  - Either by using the `IDiConfigurator` interface and manually registering the configurator
+  - Or by using the `MonoDiConfigurator` component and adding it to the containers inspector
 - Handle security methods and exceptions
   - When a service is abstract / interface / enum
   - When a service is already registered

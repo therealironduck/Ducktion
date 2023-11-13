@@ -247,5 +247,19 @@ namespace TheRealIronDuck.Ducktion.Editor.Tests.Editor
                 $"Service {typeof(SimpleEnum)} is an enum"
             );
         }
+
+        [Test]
+        public void ItLogsAllUsedConfiguratorsInTheInfoChannel()
+        {
+            var logger = FakeLogger();
+            
+            container.AddConfigurator(new ExampleConfigurator());
+            container.Reinitialize();
+            
+            logger.AssertHasMessage(
+                LogLevel.Info,
+                $"Using configurator: {typeof(ExampleConfigurator)}"
+            );
+        }
     }
 }

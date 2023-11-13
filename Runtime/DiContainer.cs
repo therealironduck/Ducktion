@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using TheRealIronDuck.Ducktion.Configurators;
 using TheRealIronDuck.Ducktion.Enums;
 using TheRealIronDuck.Ducktion.Exceptions;
 using TheRealIronDuck.Ducktion.Logging;
@@ -50,6 +51,13 @@ namespace TheRealIronDuck.Ducktion
         /// </summary>
         [SerializeField] private SingletonMode autoResolveSingletonMode = SingletonMode.Singleton;
 
+        /// <summary>
+        /// All the default Mono configurators which will be loaded when the container is initialized.
+        /// In addition to these, you can also add your own configurators using the `AddConfigurator`
+        /// method.
+        /// </summary>
+        [SerializeField] private MonoDiConfigurator[] defaultConfigurators = Array.Empty<MonoDiConfigurator>();
+
         #endregion
 
         #region VARIABLES
@@ -74,6 +82,13 @@ namespace TheRealIronDuck.Ducktion
         /// </summary>
         private DucktionLogger _logger;
 
+        /// <summary>
+        /// This is a list of all registered configurators. It merges the default mono configurators
+        /// and manually registered containers together. This list is used in the `Reinitialize` method
+        /// and all configurators are called to register their services.
+        /// </summary>
+        private readonly List<IDiConfigurator> _configurators = new();
+
         #endregion
 
         #region LIFECYCLE METHODS
@@ -92,6 +107,8 @@ namespace TheRealIronDuck.Ducktion
                 DontDestroyOnLoad(gameObject);
             }
 
+            _configurators.AddRange(defaultConfigurators);
+
             Reinitialize();
         }
 
@@ -109,6 +126,12 @@ namespace TheRealIronDuck.Ducktion
 
             _logger = Resolve<DucktionLogger>();
             _logger.Configure(logLevel);
+
+            _configurators.ForEach(configurator =>
+            {
+                _logger.Log(LogLevel.Info, $"Using configurator: {configurator.GetType()}");
+                configurator.Register(this);
+            });
 
             _logger.Log(LogLevel.Info, "Reinitialized container");
         }
@@ -447,6 +470,17 @@ namespace TheRealIronDuck.Ducktion
             }
 
             Reinitialize();
+        }
+
+        /// <summary>
+        /// Add a new configurator to the container. This will not execute the configurator, if
+        /// the container is already initialized. If you want to reinitialize the container, use
+        /// the `Reinitialize` method.
+        /// </summary>
+        /// <param name="configurator">The new configurator</param>
+        public void AddConfigurator(IDiConfigurator configurator)
+        {
+            _configurators.Add(configurator);
         }
 
         #endregion
