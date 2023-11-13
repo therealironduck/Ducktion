@@ -18,7 +18,7 @@ namespace TheRealIronDuck.Ducktion.Editor
         /// Default spacing between the different boxes.
         /// </summary>
         private const int BoxSpacing = 15;
-        
+
         /// <summary>
         /// Default padding within each box.
         /// </summary>
@@ -38,6 +38,7 @@ namespace TheRealIronDuck.Ducktion.Editor
 
             inspector.Add(BuildGeneralOptionsBox());
             inspector.Add(BuildAutoResolveBox());
+            inspector.Add(BuildDefaultsBox());
             inspector.Add(BuildConfiguratorsBox());
 
             return inspector;
@@ -107,6 +108,31 @@ namespace TheRealIronDuck.Ducktion.Editor
         }
 
         /// <summary>
+        /// Render the box which contains the default options.
+        /// - DefaultLazyMode
+        /// </summary>
+        /// <returns>The defaults box</returns>
+        private Box BuildDefaultsBox()
+        {
+            var defaults = CreateBox("Defaults");
+
+            // HELP BOX
+            defaults.Add(new HelpBox(
+                "You can override any setting here when registering a service. These are the default values " +
+                "which will be used when registering a service without specifying any of these options.",
+                HelpBoxMessageType.Info
+            )
+            {
+                style = { marginBottom = BoxPadding }
+            });
+            // HELP BOX END
+
+            defaults.Add(new PropertyField(serializedObject.FindProperty("defaultLazyMode")));
+
+            return defaults;
+        }
+
+        /// <summary>
         /// Render the box which contains the configurators.
         /// - DefaultConfigurators
         /// </summary>
@@ -128,7 +154,7 @@ namespace TheRealIronDuck.Ducktion.Editor
 
             var defaultConfiguratorsProperty = serializedObject.FindProperty("defaultConfigurators");
             defaultConfiguratorsProperty.isExpanded = true;
-            configurators.Add(new PropertyField(defaultConfiguratorsProperty)); 
+            configurators.Add(new PropertyField(defaultConfiguratorsProperty));
 
             return configurators;
         }

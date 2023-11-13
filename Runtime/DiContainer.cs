@@ -52,6 +52,12 @@ namespace TheRealIronDuck.Ducktion
         [SerializeField] private SingletonMode autoResolveSingletonMode = SingletonMode.Singleton;
 
         /// <summary>
+        /// Specify the default lazy mode any service should be registered with. This will only be used
+        /// if no other lazy mode is specified during registration.
+        /// </summary>
+        [SerializeField] private LazyMode defaultLazyMode = LazyMode.Lazy;
+
+        /// <summary>
         /// All the default Mono configurators which will be loaded when the container is initialized.
         /// In addition to these, you can also add your own configurators using the `AddConfigurator`
         /// method.
@@ -133,6 +139,8 @@ namespace TheRealIronDuck.Ducktion
                 configurator.Register(this);
             });
 
+            InitializeNonLazyServices();
+
             _logger.Log(LogLevel.Info, "Reinitialized container");
         }
 
@@ -165,7 +173,7 @@ namespace TheRealIronDuck.Ducktion
         /// <param name="keyType">The type which gets registered</param>
         /// <param name="serviceType">The concrete implementation type</param>
         /// <exception cref="DependencyRegisterException">If the registration fails, it will throw an error</exception>
-        public void Register(Type keyType, Type serviceType)
+        public ServiceDefinition Register(Type keyType, Type serviceType)
         {
             if (!keyType.IsAssignableFrom(serviceType) && serviceType != typeof(object))
             {
@@ -189,8 +197,11 @@ namespace TheRealIronDuck.Ducktion
                 );
             }
 
-            _services.Add(keyType, new ServiceDefinition(serviceType));
+            var serviceDefinition = new ServiceDefinition(serviceType);
+            _services.Add(keyType, serviceDefinition);
             _logger.Log(LogLevel.Debug, $"Registered service: {keyType} => {serviceType}");
+
+            return serviceDefinition;
         }
 
         /// <summary>
@@ -207,7 +218,7 @@ namespace TheRealIronDuck.Ducktion
         /// </summary>
         /// <typeparam name="T">The type which should be registered</typeparam>
         /// <exception cref="DependencyRegisterException">If the registration fails, it will throw an error</exception>
-        public void Register<T>() => Register(typeof(T), typeof(T));
+        public ServiceDefinition Register<T>() => Register(typeof(T), typeof(T));
 
         /// <summary>
         /// Register a new service for a given type. The service must be the same as the type, or a child of it.
@@ -617,6 +628,20 @@ namespace TheRealIronDuck.Ducktion
 
                 throw new DependencyRegisterException(keyType, "Service is an enum");
             }
+        }
+
+        /// <summary>
+        /// This will initialize all non-lazy services. If a service has no lazy mode specified, it will
+        /// default to the `defaultLazyMode` variable.
+        /// </summary>
+        private void InitializeNonLazyServices()
+        {
+            (
+                _services.Where(service =>
+                    (!service.Value.LazyMode.HasValue && defaultLazyMode == LazyMode.NonLazy) ||
+                    service.Value?.LazyMode == LazyMode.NonLazy
+                ).Select(service => service.Key)
+            ).ToList().ForEach(type => Resolve(type));
         }
 
         #endregion
