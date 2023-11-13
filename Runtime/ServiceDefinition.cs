@@ -1,6 +1,7 @@
 ﻿using System;
 using JetBrains.Annotations;
 using TheRealIronDuck.Ducktion.Enums;
+using TheRealIronDuck.Ducktion.Exceptions;
 
 namespace TheRealIronDuck.Ducktion
 {
@@ -99,6 +100,14 @@ namespace TheRealIronDuck.Ducktion
         /// <param name="singletonMode">The new singleton mode</param>
         public ServiceDefinition SetSingletonMode(SingletonMode singletonMode)
         {
+            if (Instance != null && singletonMode == Enums.SingletonMode.NonSingleton)
+            {
+                throw new DependencyRegisterException(
+                    ServiceType,
+                    "Cannot bind an instance as non singleton"
+                );
+            }
+            
             SingletonMode = singletonMode;
 
             return this;
