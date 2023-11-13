@@ -55,18 +55,22 @@ namespace TheRealIronDuck.Ducktion
         /// <summary>
         /// Mark this service as non lazy.
         /// </summary>
-        public void NonLazy() => SetLazyMode(Enums.LazyMode.NonLazy);
+        public ServiceDefinition NonLazy() => SetLazyMode(Enums.LazyMode.NonLazy);
 
         /// <summary>
         /// Mark this service as lazy.
         /// </summary>
-        public void Lazy() => SetLazyMode(Enums.LazyMode.Lazy);
+        public ServiceDefinition Lazy() => SetLazyMode(Enums.LazyMode.Lazy);
 
         /// <summary>
         /// Set the lazy mode of this service.
         /// </summary>
         /// <param name="lazyMode">The new lazy mode</param>
-        public void SetLazyMode(LazyMode lazyMode) => LazyMode = lazyMode;
+        public ServiceDefinition SetLazyMode(LazyMode lazyMode)
+        {
+            LazyMode = lazyMode;
+            return this;
+        }
 
         #endregion
 

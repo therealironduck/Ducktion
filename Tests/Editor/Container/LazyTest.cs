@@ -160,7 +160,5 @@ namespace TheRealIronDuck.Ducktion.Editor.Tests.Editor.Container
                 Is.InstanceOf<ServiceDefinition>()
             );
         }
-
-        // TODO: Test chaining
     }
 }
