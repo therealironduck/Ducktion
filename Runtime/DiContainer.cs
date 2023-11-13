@@ -151,15 +151,18 @@ namespace TheRealIronDuck.Ducktion
         /// <param name="newLevel">The log level</param>
         /// <param name="newEnableAutoResolve">Should auto resolve be enabled?</param>
         /// <param name="newAutoResolveSingletonMode">The singleton mode of auto-resolved services</param>
+        /// <param name="newDefaultLazyMode">The default lazy mode</param>
         public void Configure(
             LogLevel newLevel = LogLevel.Error,
             bool newEnableAutoResolve = true,
-            SingletonMode newAutoResolveSingletonMode = SingletonMode.Singleton
+            SingletonMode newAutoResolveSingletonMode = SingletonMode.Singleton,
+            LazyMode newDefaultLazyMode = LazyMode.Lazy
         )
         {
             logLevel = newLevel;
             enableAutoResolve = newEnableAutoResolve;
             autoResolveSingletonMode = newAutoResolveSingletonMode;
+            defaultLazyMode = newDefaultLazyMode;
 
             Reinitialize();
         }
