@@ -157,6 +157,8 @@ MonoBehaviour:
   logLevel: 1
   enableAutoResolve: 1
   autoResolveSingletonMode: 0
+  defaultLazyMode: 0
+  defaultSingletonMode: 0
   defaultConfigurators:
   - {fileID: 455467826}
 --- !u!4 &455467825

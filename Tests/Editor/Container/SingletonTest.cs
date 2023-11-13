@@ -18,5 +18,6 @@ namespace TheRealIronDuck.Ducktion.Editor.Tests.Editor.Container
             // We check if both services are the same
             Assert.AreSame(service1, service2);
         }
+        
     }
 }

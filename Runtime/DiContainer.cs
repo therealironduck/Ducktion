@@ -56,6 +56,14 @@ namespace TheRealIronDuck.Ducktion
         /// if no other lazy mode is specified during registration.
         /// </summary>
         [SerializeField] private LazyMode defaultLazyMode = LazyMode.Lazy;
+        
+        /// <summary>
+        /// Specify the default singleton mode any service should be registered with. This will only
+        /// be used if no other singleton mode is specified during registration.
+        ///
+        /// Auto resolved services will always use the `autoResolveSingletonMode` variable.
+        /// </summary>
+        [SerializeField] private SingletonMode defaultSingletonMode = SingletonMode.Singleton;
 
         /// <summary>
         /// All the default Mono configurators which will be loaded when the container is initialized.
@@ -232,7 +240,8 @@ namespace TheRealIronDuck.Ducktion
         /// <typeparam name="TKey">The type which gets registered</typeparam>
         /// <typeparam name="TService">The concrete implementation type</typeparam>
         /// <exception cref="DependencyRegisterException">If the registration fails, it will throw an error</exception>
-        public ServiceDefinition Register<TKey, TService>() where TService : TKey => Register(typeof(TKey), typeof(TService));
+        public ServiceDefinition Register<TKey, TService>() where TService : TKey =>
+            Register(typeof(TKey), typeof(TService));
 
         /// <summary>
         /// Register a new service and its instance. The service type is used as the key and the concrete implementation.
@@ -340,7 +349,8 @@ namespace TheRealIronDuck.Ducktion
         /// <typeparam name="TKey">The type which gets registered</typeparam>
         /// <typeparam name="TService">The concrete implementation type</typeparam>
         /// <exception cref="DependencyRegisterException">If the override fails, it will throw an error</exception>
-        public ServiceDefinition Override<TKey, TService>() where TService : TKey => Override(typeof(TKey), typeof(TService));
+        public ServiceDefinition Override<TKey, TService>() where TService : TKey =>
+            Override(typeof(TKey), typeof(TService));
 
         /// <summary>
         /// Override any registered service with a specific instance. The instance will be registered as a singleton
@@ -353,7 +363,7 @@ namespace TheRealIronDuck.Ducktion
         {
             var definition = Override(type, instance.GetType());
             definition.Instance = instance;
-            
+
             return definition;
         }
 
@@ -391,7 +401,7 @@ namespace TheRealIronDuck.Ducktion
             _services[keyType].Callback = callback;
 
             _logger.Log(LogLevel.Debug, $"Overridden service: {keyType} with callback");
-            
+
             return _services[keyType];
         }
 
