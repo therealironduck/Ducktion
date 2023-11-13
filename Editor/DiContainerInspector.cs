@@ -72,16 +72,10 @@ namespace TheRealIronDuck.Ducktion.Editor
         {
             var autoResolve = CreateBox("Auto Resolve");
 
-            // HELP BOX
-            autoResolve.Add(new HelpBox(
+            autoResolve.Add(CreateHelpBox(
                 "When auto resolving is disabled, you need to manually register all your dependencies. " +
-                "Please read the documentation for more information.",
-                HelpBoxMessageType.Info
-            )
-            {
-                style = { marginBottom = BoxPadding }
-            });
-            // HELP BOX END
+                "Please read the documentation for more information."
+            ));
 
             var enableProperty = serializedObject.FindProperty("enableAutoResolve");
             autoResolve.Add(new PropertyField(enableProperty));
@@ -116,18 +110,37 @@ namespace TheRealIronDuck.Ducktion.Editor
         {
             var defaults = CreateBox("Defaults");
 
-            // HELP BOX
-            defaults.Add(new HelpBox(
+            defaults.Add(CreateHelpBox(
                 "You can override any setting here when registering a service. These are the default values " +
-                "which will be used when registering a service without specifying any of these options.",
-                HelpBoxMessageType.Info
-            )
-            {
-                style = { marginBottom = BoxPadding }
-            });
-            // HELP BOX END
+                "which will be used when registering a service without specifying any of these options."
+            ));
 
             defaults.Add(new PropertyField(serializedObject.FindProperty("defaultLazyMode")));
+
+            defaults.Add(new PropertyField(serializedObject.FindProperty("defaultSingletonMode")));
+
+            // AUTO RESOLVE HELP BOX START
+            var enableProperty = serializedObject.FindProperty("enableAutoResolve");
+
+            var autoResolveNotice = CreateHelpBox(
+                "For auto resolved services, use the configuration field in the `Auto Resolve` box.",
+                HelpBoxMessageType.None
+            );
+            autoResolveNotice.style.marginTop = BoxPadding;
+            autoResolveNotice.style.display = enableProperty.boolValue
+                ? DisplayStyle.Flex
+                : DisplayStyle.None;
+
+            defaults.TrackPropertyValue(enableProperty,
+                _ =>
+                {
+                    autoResolveNotice.style.display =
+                        enableProperty.boolValue ? DisplayStyle.Flex : DisplayStyle.None;
+                }
+            );
+
+            defaults.Add(autoResolveNotice);
+            // AUTO RESOLVE HELP BOX END
 
             return defaults;
         }
@@ -141,16 +154,10 @@ namespace TheRealIronDuck.Ducktion.Editor
         {
             var configurators = CreateBox("Configurators");
 
-            // HELP BOX
-            configurators.Add(new HelpBox(
+            configurators.Add(CreateHelpBox(
                 "Here you may add all configurators which will automatically run on startup. Alternatively, " +
-                "you can manually register them using `AddConfigurator` method.",
-                HelpBoxMessageType.Info
-            )
-            {
-                style = { marginBottom = BoxPadding }
-            });
-            // HELP BOX END
+                "you can manually register them using `AddConfigurator` method."
+            ));
 
             var defaultConfiguratorsProperty = serializedObject.FindProperty("defaultConfigurators");
             defaultConfiguratorsProperty.isExpanded = true;
@@ -194,6 +201,27 @@ namespace TheRealIronDuck.Ducktion.Editor
             box.Add(titleLabel);
 
             return box;
+        }
+
+        /// <summary>
+        /// Small little helper method to create a help box with nice padding.
+        /// </summary>
+        /// <param name="content">The message of the box</param>
+        /// <param name="type">The help box type</param>
+        /// <returns>The generated help box</returns>
+        private static HelpBox CreateHelpBox(string content, HelpBoxMessageType type = HelpBoxMessageType.Info)
+        {
+            return new HelpBox(content, type)
+            {
+                style =
+                {
+                    marginBottom = BoxPadding,
+                    paddingLeft = BoxPadding / 1.5f,
+                    paddingRight = BoxPadding / 1.5f,
+                    paddingTop = BoxPadding / 1.5f,
+                    paddingBottom = BoxPadding / 1.5f
+                }
+            };
         }
 
         #endregion

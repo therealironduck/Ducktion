@@ -1,6 +1,7 @@
 ﻿using System;
 using JetBrains.Annotations;
 using TheRealIronDuck.Ducktion.Enums;
+using TheRealIronDuck.Ducktion.Exceptions;
 
 namespace TheRealIronDuck.Ducktion
 {
@@ -38,6 +39,12 @@ namespace TheRealIronDuck.Ducktion
         /// is specified (null), which means that the container will use the default lazy mode.
         /// </summary>
         public LazyMode? LazyMode { get; private set; }
+        
+        /// <summary>
+        /// Specify if the service should be stored as a singleton or not. By default, no singleton
+        /// mode is specified (null), which means that the container will use the default singleton mode.
+        /// </summary>
+        public SingletonMode? SingletonMode { get; private set; }
 
         #endregion
 
@@ -71,8 +78,41 @@ namespace TheRealIronDuck.Ducktion
             LazyMode = lazyMode;
             return this;
         }
+        
+        /// <summary>
+        /// Mark this service as non singleton
+        /// </summary>
+        public ServiceDefinition NonSingleton() => SetSingletonMode(Enums.SingletonMode.NonSingleton);
 
+        /// <summary>
+        /// Mark this service as singleton
+        /// </summary>
+        public ServiceDefinition Singleton() => SetSingletonMode(Enums.SingletonMode.Singleton);
+
+        /// <summary>
+        /// Mark this service as non singleton. Alias for `NonSingleton`.
+        /// </summary>
+        public ServiceDefinition Transient() => SetSingletonMode(Enums.SingletonMode.NonSingleton);
+
+        /// <summary>
+        /// Set the singleton mode of this service.
+        /// </summary>
+        /// <param name="singletonMode">The new singleton mode</param>
+        public ServiceDefinition SetSingletonMode(SingletonMode singletonMode)
+        {
+            if (Instance != null && singletonMode == Enums.SingletonMode.NonSingleton)
+            {
+                throw new DependencyRegisterException(
+                    ServiceType,
+                    "Cannot bind an instance as non singleton"
+                );
+            }
+            
+            SingletonMode = singletonMode;
+
+            return this;
+        }
+        
         #endregion
-
     }
 }

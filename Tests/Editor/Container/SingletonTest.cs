@@ -1,5 +1,7 @@
 ﻿using NUnit.Framework;
 using TheRealIronDuck.Ducktion.Editor.Tests.Editor.Stubs;
+using TheRealIronDuck.Ducktion.Enums;
+using TheRealIronDuck.Ducktion.Exceptions;
 
 namespace TheRealIronDuck.Ducktion.Editor.Tests.Editor.Container
 {
@@ -10,13 +12,84 @@ namespace TheRealIronDuck.Ducktion.Editor.Tests.Editor.Container
         {
             // We register any service
             container.Register<SimpleService>();
-            
+
             // We resolve the service twice
             var service1 = container.Resolve<SimpleService>();
             var service2 = container.Resolve<SimpleService>();
-            
+
             // We check if both services are the same
             Assert.AreSame(service1, service2);
+        }
+
+        [Test]
+        public void ItCanRegisterSomeServicesAsNonSingleton()
+        {
+            // We register any service
+            container.Register<SimpleService>().NonSingleton();
+
+            // We resolve the service twice
+            var service1 = container.Resolve<SimpleService>();
+            var service2 = container.Resolve<SimpleService>();
+
+            // We check if both services are NOT the same
+            Assert.AreNotSame(service1, service2);
+        }
+
+        [Test]
+        public void ItCanChangeTheDefaultModeToNonSingleton()
+        {
+            container.Configure(newDefaultSingletonMode: SingletonMode.NonSingleton);
+
+            // We register any service
+            container.Register<SimpleService>();
+
+            // We resolve the service twice
+            var service1 = container.Resolve<SimpleService>();
+            var service2 = container.Resolve<SimpleService>();
+
+            // We check if both services are NOT the same
+            Assert.AreNotSame(service1, service2);
+        }
+
+        [Test]
+        public void ItCanRegisterCallbackBasedServicesAsNonSingleton()
+        {
+            // We register any service
+            container.Register<SimpleService>(() => new SimpleService()).NonSingleton();
+
+            // We resolve the service twice
+            var service1 = container.Resolve<SimpleService>();
+            var service2 = container.Resolve<SimpleService>();
+
+            // We check if both services are NOT the same
+            Assert.AreNotSame(service1, service2);
+        }
+
+        [Test]
+        public void ItCanRegisterCallbackBasedServicesAsNonSingletonWithContainerDefaults()
+        {
+            container.Configure(newDefaultSingletonMode: SingletonMode.NonSingleton);
+
+            // We register any service
+            container.Register<SimpleService>(() => new SimpleService());
+
+            // We resolve the service twice
+            var service1 = container.Resolve<SimpleService>();
+            var service2 = container.Resolve<SimpleService>();
+
+            // We check if both services are NOT the same
+            Assert.AreNotSame(service1, service2);
+        }
+
+        [Test]
+        public void ItThrowsAnErrorIfAnInstanceBindIsNonSingleton()
+        {
+            var error = Assert.Throws<DependencyRegisterException>(() =>
+            {
+                container.Register<SimpleService>(new SimpleService()).NonSingleton();
+            });
+
+            Assert.That(error.Message, Does.Contain("Cannot bind an instance as non singleton"));
         }
     }
 }

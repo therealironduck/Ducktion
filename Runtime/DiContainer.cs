@@ -58,6 +58,14 @@ namespace TheRealIronDuck.Ducktion
         [SerializeField] private LazyMode defaultLazyMode = LazyMode.Lazy;
 
         /// <summary>
+        /// Specify the default singleton mode any service should be registered with. This will only
+        /// be used if no other singleton mode is specified during registration.
+        ///
+        /// Auto resolved services will always use the `autoResolveSingletonMode` variable.
+        /// </summary>
+        [SerializeField] private SingletonMode defaultSingletonMode = SingletonMode.Singleton;
+
+        /// <summary>
         /// All the default Mono configurators which will be loaded when the container is initialized.
         /// In addition to these, you can also add your own configurators using the `AddConfigurator`
         /// method.
@@ -152,17 +160,20 @@ namespace TheRealIronDuck.Ducktion
         /// <param name="newEnableAutoResolve">Should auto resolve be enabled?</param>
         /// <param name="newAutoResolveSingletonMode">The singleton mode of auto-resolved services</param>
         /// <param name="newDefaultLazyMode">The default lazy mode</param>
+        /// <param name="newDefaultSingletonMode">The default singleton mode</param>
         public void Configure(
             LogLevel newLevel = LogLevel.Error,
             bool newEnableAutoResolve = true,
             SingletonMode newAutoResolveSingletonMode = SingletonMode.Singleton,
-            LazyMode newDefaultLazyMode = LazyMode.Lazy
+            LazyMode newDefaultLazyMode = LazyMode.Lazy,
+            SingletonMode newDefaultSingletonMode = SingletonMode.Singleton
         )
         {
             logLevel = newLevel;
             enableAutoResolve = newEnableAutoResolve;
             autoResolveSingletonMode = newAutoResolveSingletonMode;
             defaultLazyMode = newDefaultLazyMode;
+            defaultSingletonMode = newDefaultSingletonMode;
 
             Reinitialize();
         }
@@ -232,7 +243,8 @@ namespace TheRealIronDuck.Ducktion
         /// <typeparam name="TKey">The type which gets registered</typeparam>
         /// <typeparam name="TService">The concrete implementation type</typeparam>
         /// <exception cref="DependencyRegisterException">If the registration fails, it will throw an error</exception>
-        public ServiceDefinition Register<TKey, TService>() where TService : TKey => Register(typeof(TKey), typeof(TService));
+        public ServiceDefinition Register<TKey, TService>() where TService : TKey =>
+            Register(typeof(TKey), typeof(TService));
 
         /// <summary>
         /// Register a new service and its instance. The service type is used as the key and the concrete implementation.
@@ -340,7 +352,8 @@ namespace TheRealIronDuck.Ducktion
         /// <typeparam name="TKey">The type which gets registered</typeparam>
         /// <typeparam name="TService">The concrete implementation type</typeparam>
         /// <exception cref="DependencyRegisterException">If the override fails, it will throw an error</exception>
-        public ServiceDefinition Override<TKey, TService>() where TService : TKey => Override(typeof(TKey), typeof(TService));
+        public ServiceDefinition Override<TKey, TService>() where TService : TKey =>
+            Override(typeof(TKey), typeof(TService));
 
         /// <summary>
         /// Override any registered service with a specific instance. The instance will be registered as a singleton
@@ -353,7 +366,7 @@ namespace TheRealIronDuck.Ducktion
         {
             var definition = Override(type, instance.GetType());
             definition.Instance = instance;
-            
+
             return definition;
         }
 
@@ -391,7 +404,7 @@ namespace TheRealIronDuck.Ducktion
             _services[keyType].Callback = callback;
 
             _logger.Log(LogLevel.Debug, $"Overridden service: {keyType} with callback");
-            
+
             return _services[keyType];
         }
 
@@ -505,7 +518,11 @@ namespace TheRealIronDuck.Ducktion
             if (singleton?.Callback != null)
             {
                 var result = singleton.Callback();
-                StoreAsSingleton(type, result);
+
+                if ((singleton.SingletonMode ?? defaultSingletonMode) == SingletonMode.Singleton)
+                {
+                    StoreAsSingleton(type, result);
+                }
 
                 return result;
             }
@@ -562,8 +579,11 @@ namespace TheRealIronDuck.Ducktion
             }
 
             var instance = Activator.CreateInstance(targetType, parameters.ToArray());
+            var storeSingleton = (isAutoResolved && autoResolveSingletonMode == SingletonMode.Singleton) ||
+                                 (!isAutoResolved && (singleton?.SingletonMode ?? defaultSingletonMode) ==
+                                     SingletonMode.Singleton);
 
-            if (!isAutoResolved || autoResolveSingletonMode == SingletonMode.Singleton)
+            if (storeSingleton)
             {
                 StoreAsSingleton(type, instance);
             }

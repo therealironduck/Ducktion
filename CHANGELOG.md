@@ -37,6 +37,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - `SetLazyMode(lazyMode)` to specify the lazy mode
     - `Lazy()` to mark a service as lazy (Alias for `SetLazyMode(LazyMode.Lazy)`)
     - `NonLazy()` to mark a service as non-lazy (Alias for `SetLazyMode(LazyMode.NonLazy)`)
+- Services can be transient or singleton
+  - Transient services will always be resolved as a new instance
+  - Added methods to service definition:
+    - `SetSingletonMode(singletonMode)` to specify the singleton mode
+    - `Singleton()` to mark a service as singleton (Alias for `SetSingletonMode(SingletonMode.Singleton)`)
+    - `NonSingleton()` to mark a service as non-singleton (Alias for `SetSingletonMode(SingletonMode.NonSingleton)`)
+    - `Transient()` as an alias for `NonSingleton()`
 - Services can be registered in configurators
   - Either by using the `IDiConfigurator` interface and manually registering the configurator
   - Or by using the `MonoDiConfigurator` component and adding it to the containers inspector
