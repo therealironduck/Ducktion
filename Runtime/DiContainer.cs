@@ -128,7 +128,7 @@ namespace TheRealIronDuck.Ducktion
 
         #endregion
 
-        #region PUBLIC METHODS
+        #region GENERAL METHODS
 
         /// <summary>
         /// Reinitialize the container. This will register the container in the static `Ducktion` class
@@ -177,6 +177,50 @@ namespace TheRealIronDuck.Ducktion
 
             Reinitialize();
         }
+
+        /// <summary>
+        /// Remove all registered services and singleton instances, basically resetting the container.
+        /// </summary>
+        public void Clear()
+        {
+            _logger.Log(LogLevel.Info, "Clearing container");
+
+            _services.Clear();
+            _services.Add(typeof(DucktionLogger), new ServiceDefinition(typeof(DucktionLogger)));
+
+            Reinitialize();
+        }
+
+        /// <summary>
+        /// Reset every singleton instance. This will not remove the registered services.
+        /// If you want to reset everything, use `Clear` instead.
+        /// </summary>
+        public void ResetSingletons()
+        {
+            _logger.Log(LogLevel.Info, "Resetting container");
+
+            foreach (var service in _services)
+            {
+                service.Value.Instance = null;
+            }
+
+            Reinitialize();
+        }
+
+        /// <summary>
+        /// Add a new configurator to the container. This will not execute the configurator, if
+        /// the container is already initialized. If you want to reinitialize the container, use
+        /// the `Reinitialize` method.
+        /// </summary>
+        /// <param name="configurator">The new configurator</param>
+        public void AddConfigurator(IDiConfigurator configurator)
+        {
+            _configurators.Add(configurator);
+        }
+
+        #endregion
+
+        #region REGISTERING SERVICES
 
         /// <summary>
         /// Register a new service for a given type. The service must be the same as the type, or a child of it.
@@ -243,17 +287,9 @@ namespace TheRealIronDuck.Ducktion
         /// <typeparam name="TKey">The type which gets registered</typeparam>
         /// <typeparam name="TService">The concrete implementation type</typeparam>
         /// <exception cref="DependencyRegisterException">If the registration fails, it will throw an error</exception>
-        public ServiceDefinition Register<TKey, TService>() where TService : TKey =>
-            Register(typeof(TKey), typeof(TService));
-
-        /// <summary>
-        /// Register a new service and its instance. The service type is used as the key and the concrete implementation.
-        /// The instance will be registered as a singleton.
-        /// </summary>
-        /// <param name="instance">The instance which should be returned</param>
-        /// <typeparam name="T">The type which should be registered</typeparam>
-        /// <exception cref="DependencyRegisterException">If the registration fails, it will throw an error</exception>
-        public ServiceDefinition Register<T>(T instance) => Register(typeof(T), instance);
+        public ServiceDefinition Register<TKey, TService>() where TService : TKey => Register(
+            typeof(TKey), typeof(TService)
+        );
 
         /// <summary>
         /// Register a new service and its instance. The service type is used as the key and the concrete implementation.
@@ -269,6 +305,15 @@ namespace TheRealIronDuck.Ducktion
 
             return definition;
         }
+
+        /// <summary>
+        /// Register a new service and its instance. The service type is used as the key and the concrete implementation.
+        /// The instance will be registered as a singleton.
+        /// </summary>
+        /// <param name="instance">The instance which should be returned</param>
+        /// <typeparam name="T">The type which should be registered</typeparam>
+        /// <exception cref="DependencyRegisterException">If the registration fails, it will throw an error</exception>
+        public ServiceDefinition Register<T>(T instance) => Register(typeof(T), instance);
 
         /// <summary>
         /// Register a callback which gets called on resolve. This is useful if you want to resolve
@@ -302,6 +347,10 @@ namespace TheRealIronDuck.Ducktion
         /// <param name="callback">The callback which gets called on resolve. Must return an instance</param>
         /// <exception cref="DependencyRegisterException">If the registration fails, it will throw an error</exception>
         public ServiceDefinition Register<T>(Func<T> callback) => Register(typeof(T), callback);
+
+        #endregion
+
+        #region OVERRIDDING SERVICES
 
         /// <summary>
         /// Override any registered service with another implementation. Any singleton instance for this type
@@ -352,8 +401,9 @@ namespace TheRealIronDuck.Ducktion
         /// <typeparam name="TKey">The type which gets registered</typeparam>
         /// <typeparam name="TService">The concrete implementation type</typeparam>
         /// <exception cref="DependencyRegisterException">If the override fails, it will throw an error</exception>
-        public ServiceDefinition Override<TKey, TService>() where TService : TKey =>
-            Override(typeof(TKey), typeof(TService));
+        public ServiceDefinition Override<TKey, TService>() where TService : TKey => Override(
+            typeof(TKey), typeof(TService)
+        );
 
         /// <summary>
         /// Override any registered service with a specific instance. The instance will be registered as a singleton
@@ -419,6 +469,10 @@ namespace TheRealIronDuck.Ducktion
         /// <exception cref="DependencyRegisterException">If the override fails, it will throw an error</exception>
         public ServiceDefinition Override<T>(Func<T> callback) => Override(typeof(T), () => callback());
 
+        #endregion
+
+        #region RESOLVE SERVICES
+
         /// <summary>
         /// Resolve a given service from the container. It will instantiate the concrete implementation
         /// and return it.
@@ -448,50 +502,6 @@ namespace TheRealIronDuck.Ducktion
         {
             return InnerResolve(type, new[] { type });
         }
-
-        /// <summary>
-        /// Remove all registered services and singleton instances, basically resetting the container.
-        /// </summary>
-        public void Clear()
-        {
-            _logger.Log(LogLevel.Info, "Clearing container");
-
-            _services.Clear();
-            _services.Add(typeof(DucktionLogger), new ServiceDefinition(typeof(DucktionLogger)));
-
-            Reinitialize();
-        }
-
-        /// <summary>
-        /// Reset every singleton instance. This will not remove the registered services.
-        /// If you want to reset everything, use `Clear` instead.
-        /// </summary>
-        public void ResetSingletons()
-        {
-            _logger.Log(LogLevel.Info, "Resetting container");
-
-            foreach (var service in _services)
-            {
-                service.Value.Instance = null;
-            }
-
-            Reinitialize();
-        }
-
-        /// <summary>
-        /// Add a new configurator to the container. This will not execute the configurator, if
-        /// the container is already initialized. If you want to reinitialize the container, use
-        /// the `Reinitialize` method.
-        /// </summary>
-        /// <param name="configurator">The new configurator</param>
-        public void AddConfigurator(IDiConfigurator configurator)
-        {
-            _configurators.Add(configurator);
-        }
-
-        #endregion
-
-        #region PRIVATE METHODS
 
         /// <summary>
         /// Inner logic to resolve a component. This method handles the recursive resolving of all
@@ -595,6 +605,10 @@ namespace TheRealIronDuck.Ducktion
 
             return instance;
         }
+        
+        #endregion
+
+        #region HELPER METHODS
 
         /// <summary>
         /// Register a given instance as a singleton for the given type.
@@ -615,6 +629,16 @@ namespace TheRealIronDuck.Ducktion
             _services.Add(type, new ServiceDefinition(type) { Instance = instance });
         }
 
+        /// <summary>
+        /// Validate that a given key and service type are valid. This will throw an error if the
+        /// conditions are not met.
+        ///
+        /// - The service must not be abstract
+        /// - The service must not be an enum
+        /// </summary>
+        /// <param name="keyType"></param>
+        /// <param name="serviceType"></param>
+        /// <exception cref="DependencyRegisterException"></exception>
         private void ValidateService(Type keyType, Type serviceType)
         {
             if (serviceType.IsAbstract)
