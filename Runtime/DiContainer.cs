@@ -56,7 +56,7 @@ namespace TheRealIronDuck.Ducktion
         /// if no other lazy mode is specified during registration.
         /// </summary>
         [SerializeField] private LazyMode defaultLazyMode = LazyMode.Lazy;
-        
+
         /// <summary>
         /// Specify the default singleton mode any service should be registered with. This will only
         /// be used if no other singleton mode is specified during registration.
@@ -160,17 +160,20 @@ namespace TheRealIronDuck.Ducktion
         /// <param name="newEnableAutoResolve">Should auto resolve be enabled?</param>
         /// <param name="newAutoResolveSingletonMode">The singleton mode of auto-resolved services</param>
         /// <param name="newDefaultLazyMode">The default lazy mode</param>
+        /// <param name="newDefaultSingletonMode">The default singleton mode</param>
         public void Configure(
             LogLevel newLevel = LogLevel.Error,
             bool newEnableAutoResolve = true,
             SingletonMode newAutoResolveSingletonMode = SingletonMode.Singleton,
-            LazyMode newDefaultLazyMode = LazyMode.Lazy
+            LazyMode newDefaultLazyMode = LazyMode.Lazy,
+            SingletonMode newDefaultSingletonMode = SingletonMode.Singleton
         )
         {
             logLevel = newLevel;
             enableAutoResolve = newEnableAutoResolve;
             autoResolveSingletonMode = newAutoResolveSingletonMode;
             defaultLazyMode = newDefaultLazyMode;
+            defaultSingletonMode = newDefaultSingletonMode;
 
             Reinitialize();
         }
@@ -515,7 +518,11 @@ namespace TheRealIronDuck.Ducktion
             if (singleton?.Callback != null)
             {
                 var result = singleton.Callback();
-                StoreAsSingleton(type, result);
+
+                if ((singleton.SingletonMode ?? defaultSingletonMode) == SingletonMode.Singleton)
+                {
+                    StoreAsSingleton(type, result);
+                }
 
                 return result;
             }
@@ -572,8 +579,11 @@ namespace TheRealIronDuck.Ducktion
             }
 
             var instance = Activator.CreateInstance(targetType, parameters.ToArray());
+            var storeSingleton = (isAutoResolved && autoResolveSingletonMode == SingletonMode.Singleton) ||
+                                 (!isAutoResolved && (singleton?.SingletonMode ?? defaultSingletonMode) ==
+                                     SingletonMode.Singleton);
 
-            if (!isAutoResolved || autoResolveSingletonMode == SingletonMode.Singleton)
+            if (storeSingleton)
             {
                 StoreAsSingleton(type, instance);
             }
