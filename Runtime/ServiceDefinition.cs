@@ -20,6 +20,11 @@ namespace TheRealIronDuck.Ducktion
         public readonly Type ServiceType;
 
         /// <summary>
+        /// The service id. This can be used to register multiple services of the same type.
+        /// </summary>
+        [CanBeNull] public readonly string Id;
+
+        /// <summary>
         /// The singleton instance of the service. Can be null if the service is not a singleton
         /// or if the service has not been resolved yet.
         ///
@@ -50,24 +55,15 @@ namespace TheRealIronDuck.Ducktion
 
         #region LIFECYCLE METHODS
 
-        internal ServiceDefinition(Type serviceType)
+        internal ServiceDefinition(Type serviceType, [CanBeNull] string id)
         {
             ServiceType = serviceType;
+            Id = id;
         }
 
         #endregion
 
-        #region PUBLIC METHODS
-
-        /// <summary>
-        /// Mark this service as non lazy.
-        /// </summary>
-        public ServiceDefinition NonLazy() => SetLazyMode(Enums.LazyMode.NonLazy);
-
-        /// <summary>
-        /// Mark this service as lazy.
-        /// </summary>
-        public ServiceDefinition Lazy() => SetLazyMode(Enums.LazyMode.Lazy);
+        #region LAZY CONFIGURATION
 
         /// <summary>
         /// Set the lazy mode of this service.
@@ -80,19 +76,18 @@ namespace TheRealIronDuck.Ducktion
         }
         
         /// <summary>
-        /// Mark this service as non singleton
+        /// Mark this service as non lazy.
         /// </summary>
-        public ServiceDefinition NonSingleton() => SetSingletonMode(Enums.SingletonMode.NonSingleton);
+        public ServiceDefinition NonLazy() => SetLazyMode(Enums.LazyMode.NonLazy);
 
         /// <summary>
-        /// Mark this service as singleton
+        /// Mark this service as lazy.
         /// </summary>
-        public ServiceDefinition Singleton() => SetSingletonMode(Enums.SingletonMode.Singleton);
+        public ServiceDefinition Lazy() => SetLazyMode(Enums.LazyMode.Lazy);
 
-        /// <summary>
-        /// Mark this service as non singleton. Alias for `NonSingleton`.
-        /// </summary>
-        public ServiceDefinition Transient() => SetSingletonMode(Enums.SingletonMode.NonSingleton);
+        #endregion
+        
+        #region SINGLETON CONFIGURATION
 
         /// <summary>
         /// Set the singleton mode of this service.
@@ -107,11 +102,26 @@ namespace TheRealIronDuck.Ducktion
                     "Cannot bind an instance as non singleton"
                 );
             }
-            
+
             SingletonMode = singletonMode;
 
             return this;
         }
+
+        /// <summary>
+        /// Mark this service as non singleton
+        /// </summary>
+        public ServiceDefinition NonSingleton() => SetSingletonMode(Enums.SingletonMode.NonSingleton);
+
+        /// <summary>
+        /// Mark this service as singleton
+        /// </summary>
+        public ServiceDefinition Singleton() => SetSingletonMode(Enums.SingletonMode.Singleton);
+
+        /// <summary>
+        /// Mark this service as non singleton. Alias for `NonSingleton`.
+        /// </summary>
+        public ServiceDefinition Transient() => SetSingletonMode(Enums.SingletonMode.NonSingleton);
         
         #endregion
     }

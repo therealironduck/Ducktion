@@ -15,6 +15,7 @@ namespace TheRealIronDuck.Ducktion.Editor.Tests.Editor
             Assert.That(definition.SingletonMode, Is.Null);
             Assert.That(definition.Instance, Is.Null);
             Assert.That(definition.Callback, Is.Null);
+            Assert.That(definition.Id, Is.Null);
         }
 
         [Test]
