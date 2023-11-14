@@ -380,6 +380,7 @@ namespace TheRealIronDuck.Ducktion
         /// </summary>
         /// <param name="keyType">The type which gets registered</param>
         /// <param name="serviceType">The concrete implementation type</param>
+        /// <param name="id">The id of the service</param>
         /// <exception cref="DependencyRegisterException">If the override fails, it will throw an error</exception>
         public ServiceDefinition Override(Type keyType, Type serviceType, [CanBeNull] string id = null)
         {
@@ -421,10 +422,10 @@ namespace TheRealIronDuck.Ducktion
         /// </summary>
         /// <typeparam name="TKey">The type which gets registered</typeparam>
         /// <typeparam name="TService">The concrete implementation type</typeparam>
+        /// <param name="id">The id of the service</param>
         /// <exception cref="DependencyRegisterException">If the override fails, it will throw an error</exception>
-        public ServiceDefinition Override<TKey, TService>() where TService : TKey => Override(
-            typeof(TKey), typeof(TService)
-        );
+        public ServiceDefinition Override<TKey, TService>([CanBeNull] string id = null) where TService : TKey =>
+            Override(typeof(TKey), typeof(TService), id);
 
         /// <summary>
         /// Override any registered service with a specific instance. The instance will be registered as a singleton
@@ -432,10 +433,11 @@ namespace TheRealIronDuck.Ducktion
         /// </summary>
         /// <param name="type">The type which gets registered</param>
         /// <param name="instance">The instance which should be returned</param>
+        /// <param name="id">The id of the service</param>
         /// <exception cref="DependencyRegisterException">If the registration fails, it will throw an error</exception>
-        public ServiceDefinition Override(Type type, object instance)
+        public ServiceDefinition Override(Type type, object instance, [CanBeNull] string id = null)
         {
-            var definition = Override(type, instance.GetType());
+            var definition = Override(type, instance.GetType(), id);
             definition.Instance = instance;
 
             return definition;
@@ -447,8 +449,10 @@ namespace TheRealIronDuck.Ducktion
         /// </summary>
         /// <typeparam name="T">The type which gets registered</typeparam>
         /// <param name="instance">The instance which should be returned</param>
+        /// <param name="id">The id of the service</param>
         /// <exception cref="DependencyRegisterException">If the registration fails, it will throw an error</exception>
-        public ServiceDefinition Override<T>(T instance) => Override(typeof(T), instance);
+        public ServiceDefinition Override<T>(T instance, [CanBeNull] string id = null) =>
+            Override(typeof(T), instance, id);
 
         /// <summary>
         /// Override a service with a callback which gets called on resolve. This is useful if you
@@ -458,6 +462,7 @@ namespace TheRealIronDuck.Ducktion
         /// </summary>
         /// <param name="keyType">The type which gets registered</param>
         /// <param name="callback">The callback which gets called on resolve. Must return an instance</param>
+        /// <param name="id">The id of the service</param>
         /// <exception cref="DependencyRegisterException">If the override fails, it will throw an error</exception>
         public ServiceDefinition Override(Type keyType, Func<object> callback, [CanBeNull] string id = null)
         {
@@ -488,8 +493,10 @@ namespace TheRealIronDuck.Ducktion
         /// </summary>
         /// <typeparam name="T">The type which gets registered</typeparam>
         /// <param name="callback">The callback which gets called on resolve. Must return an instance</param>
+        /// <param name="id">The id of the service</param>
         /// <exception cref="DependencyRegisterException">If the override fails, it will throw an error</exception>
-        public ServiceDefinition Override<T>(Func<T> callback) => Override(typeof(T), () => callback());
+        public ServiceDefinition Override<T>(Func<T> callback, [CanBeNull] string id = null) =>
+            Override(typeof(T), () => callback(), id);
 
         #endregion
 
