@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using JetBrains.Annotations;
 using TheRealIronDuck.Ducktion.Configurators;
 using TheRealIronDuck.Ducktion.Enums;
 using TheRealIronDuck.Ducktion.Exceptions;
@@ -77,16 +78,21 @@ namespace TheRealIronDuck.Ducktion
         #region VARIABLES
 
         /// <summary>
-        /// This variable contains all registered service references. The key is for example the interface
+        /// This variable contains all registered service references. The key is the combined ID and the interface
         /// with the value being the service definition. The service definition holds the real type, - in a
         /// lot of cases both key and value can be the same type. It also contains the singleton instances
         /// and other relevant data to resolve the service.
         ///
+        /// If the service has no ID, the key will be null.
+        ///
         /// By default we register our own logger, so that we can log all events happening.
         /// </summary>
-        private readonly Dictionary<Type, ServiceDefinition> _services = new()
+        private readonly Dictionary<Tuple<string, Type>, ServiceDefinition> _services = new()
         {
-            { typeof(DucktionLogger), new ServiceDefinition(typeof(DucktionLogger)) }
+            {
+                new Tuple<string, Type>(null, typeof(DucktionLogger)),
+                new ServiceDefinition(typeof(DucktionLogger), null)
+            }
         };
 
         /// <summary>
@@ -186,7 +192,10 @@ namespace TheRealIronDuck.Ducktion
             _logger.Log(LogLevel.Info, "Clearing container");
 
             _services.Clear();
-            _services.Add(typeof(DucktionLogger), new ServiceDefinition(typeof(DucktionLogger)));
+            _services.Add(
+                new Tuple<string, Type>(null, typeof(DucktionLogger)),
+                new ServiceDefinition(typeof(DucktionLogger), null)
+            );
 
             Reinitialize();
         }
@@ -230,8 +239,9 @@ namespace TheRealIronDuck.Ducktion
         /// </summary>
         /// <param name="keyType">The type which gets registered</param>
         /// <param name="serviceType">The concrete implementation type</param>
+        /// <param name="id">The id of the service</param>
         /// <exception cref="DependencyRegisterException">If the registration fails, it will throw an error</exception>
-        public ServiceDefinition Register(Type keyType, Type serviceType)
+        public ServiceDefinition Register(Type keyType, Type serviceType, [CanBeNull] string id = null)
         {
             if (!keyType.IsAssignableFrom(serviceType) && serviceType != typeof(object))
             {
@@ -245,7 +255,9 @@ namespace TheRealIronDuck.Ducktion
 
             ValidateService(keyType, serviceType);
 
-            if (_services.ContainsKey(keyType))
+            var key = new Tuple<string, Type>(id, keyType);
+
+            if (_services.ContainsKey(key))
             {
                 _logger.Log(LogLevel.Error, $"Service {keyType} is already registered");
 
@@ -255,8 +267,8 @@ namespace TheRealIronDuck.Ducktion
                 );
             }
 
-            var serviceDefinition = new ServiceDefinition(serviceType);
-            _services.Add(keyType, serviceDefinition);
+            var serviceDefinition = new ServiceDefinition(serviceType, id);
+            _services.Add(key, serviceDefinition);
             _logger.Log(LogLevel.Debug, $"Registered service: {keyType} => {serviceType}");
 
             return serviceDefinition;
@@ -267,16 +279,18 @@ namespace TheRealIronDuck.Ducktion
         /// The service must not be abstract or an enum.
         /// </summary>
         /// <param name="type">The type which should be registered</param>
+        /// <param name="id">The id of the service</param>
         /// <exception cref="DependencyRegisterException">If the registration fails, it will throw an error</exception>
-        public ServiceDefinition Register(Type type) => Register(type, type);
+        public ServiceDefinition Register(Type type, [CanBeNull] string id = null) => Register(type, type, id);
 
         /// <summary>
         /// Register a new service. The service type is used as the key and the concrete implementation.
         /// The service must not be abstract or an enum.
         /// </summary>
         /// <typeparam name="T">The type which should be registered</typeparam>
+        /// <param name="id">The id of the service</param>
         /// <exception cref="DependencyRegisterException">If the registration fails, it will throw an error</exception>
-        public ServiceDefinition Register<T>() => Register(typeof(T), typeof(T));
+        public ServiceDefinition Register<T>([CanBeNull] string id = null) => Register(typeof(T), typeof(T), id);
 
         /// <summary>
         /// Register a new service for a given type. The service must be the same as the type, or a child of it.
@@ -286,10 +300,10 @@ namespace TheRealIronDuck.Ducktion
         /// </summary>
         /// <typeparam name="TKey">The type which gets registered</typeparam>
         /// <typeparam name="TService">The concrete implementation type</typeparam>
+        /// <param name="id">The id of the service</param>
         /// <exception cref="DependencyRegisterException">If the registration fails, it will throw an error</exception>
-        public ServiceDefinition Register<TKey, TService>() where TService : TKey => Register(
-            typeof(TKey), typeof(TService)
-        );
+        public ServiceDefinition Register<TKey, TService>([CanBeNull] string id = null) where TService : TKey =>
+            Register(typeof(TKey), typeof(TService), id);
 
         /// <summary>
         /// Register a new service and its instance. The service type is used as the key and the concrete implementation.
@@ -297,10 +311,11 @@ namespace TheRealIronDuck.Ducktion
         /// </summary>
         /// <param name="type">The type which should be registered</param>
         /// <param name="instance">The instance which should be returned</param>
+        /// <param name="id">The id of the service</param>
         /// <exception cref="DependencyRegisterException">If the registration fails, it will throw an error</exception>
-        public ServiceDefinition Register(Type type, object instance)
+        public ServiceDefinition Register(Type type, object instance, [CanBeNull] string id = null)
         {
-            var definition = Register(type, instance.GetType());
+            var definition = Register(type, instance.GetType(), id);
             definition.Instance = instance;
 
             return definition;
@@ -311,9 +326,11 @@ namespace TheRealIronDuck.Ducktion
         /// The instance will be registered as a singleton.
         /// </summary>
         /// <param name="instance">The instance which should be returned</param>
+        /// <param name="id">The id of the service</param>
         /// <typeparam name="T">The type which should be registered</typeparam>
         /// <exception cref="DependencyRegisterException">If the registration fails, it will throw an error</exception>
-        public ServiceDefinition Register<T>(T instance) => Register(typeof(T), instance);
+        public ServiceDefinition Register<T>(T instance, [CanBeNull] string id = null) =>
+            Register(typeof(T), instance, id);
 
         /// <summary>
         /// Register a callback which gets called on resolve. This is useful if you want to resolve
@@ -323,11 +340,12 @@ namespace TheRealIronDuck.Ducktion
         /// </summary>
         /// <param name="type">The type which should be registered</param>
         /// <param name="callback">The callback which gets called on resolve. Must return an instance</param>
+        /// <param name="id">The id of the service</param>
         /// <exception cref="DependencyRegisterException">If the registration fails, it will throw an error</exception>
-        public ServiceDefinition Register<T>(Type type, Func<T> callback)
+        public ServiceDefinition Register<T>(Type type, Func<T> callback, [CanBeNull] string id = null)
         {
             var serviceType = callback.Method.ReturnType.IsAbstract ? typeof(object) : type;
-            var definition = Register(type, serviceType);
+            var definition = Register(type, serviceType, id);
             definition.Callback = () => callback();
 
             return definition;
@@ -345,8 +363,10 @@ namespace TheRealIronDuck.Ducktion
         /// </summary>
         /// <typeparam name="T">The type which should be registered</typeparam>
         /// <param name="callback">The callback which gets called on resolve. Must return an instance</param>
+        /// <param name="id">The id of the service</param>
         /// <exception cref="DependencyRegisterException">If the registration fails, it will throw an error</exception>
-        public ServiceDefinition Register<T>(Func<T> callback) => Register(typeof(T), callback);
+        public ServiceDefinition Register<T>(Func<T> callback, [CanBeNull] string id = null) =>
+            Register(typeof(T), callback, id);
 
         #endregion
 
@@ -361,7 +381,7 @@ namespace TheRealIronDuck.Ducktion
         /// <param name="keyType">The type which gets registered</param>
         /// <param name="serviceType">The concrete implementation type</param>
         /// <exception cref="DependencyRegisterException">If the override fails, it will throw an error</exception>
-        public ServiceDefinition Override(Type keyType, Type serviceType)
+        public ServiceDefinition Override(Type keyType, Type serviceType, [CanBeNull] string id = null)
         {
             if (!keyType.IsAssignableFrom(serviceType))
             {
@@ -375,7 +395,8 @@ namespace TheRealIronDuck.Ducktion
 
             ValidateService(keyType, serviceType);
 
-            if (!_services.ContainsKey(keyType))
+            var key = new Tuple<string, Type>(id, keyType);
+            if (!_services.ContainsKey(key))
             {
                 _logger.Log(LogLevel.Error, $"Service {keyType} is not registered");
 
@@ -385,11 +406,11 @@ namespace TheRealIronDuck.Ducktion
                 );
             }
 
-            _services[keyType] = new ServiceDefinition(serviceType);
+            _services[key] = new ServiceDefinition(serviceType, id);
 
             _logger.Log(LogLevel.Debug, $"Overridden service: {keyType} => {serviceType}");
 
-            return _services[keyType];
+            return _services[key];
         }
 
         /// <summary>
@@ -438,9 +459,10 @@ namespace TheRealIronDuck.Ducktion
         /// <param name="keyType">The type which gets registered</param>
         /// <param name="callback">The callback which gets called on resolve. Must return an instance</param>
         /// <exception cref="DependencyRegisterException">If the override fails, it will throw an error</exception>
-        public ServiceDefinition Override(Type keyType, Func<object> callback)
+        public ServiceDefinition Override(Type keyType, Func<object> callback, [CanBeNull] string id = null)
         {
-            if (!_services.ContainsKey(keyType))
+            var key = new Tuple<string, Type>(id, keyType);
+            if (!_services.ContainsKey(key))
             {
                 _logger.Log(LogLevel.Error, $"Service {keyType} is not registered");
 
@@ -450,12 +472,12 @@ namespace TheRealIronDuck.Ducktion
                 );
             }
 
-            _services[keyType].Instance = null;
-            _services[keyType].Callback = callback;
+            _services[key].Instance = null;
+            _services[key].Callback = callback;
 
             _logger.Log(LogLevel.Debug, $"Overridden service: {keyType} with callback");
 
-            return _services[keyType];
+            return _services[key];
         }
 
         /// <summary>
@@ -481,11 +503,12 @@ namespace TheRealIronDuck.Ducktion
         /// twice, you will get the same instance.
         /// </summary>
         /// <typeparam name="T">The type which should be resolved</typeparam>
+        /// <param name="id">The service ID which should be resolved</param>
         /// <returns>The singleton instance</returns>
         /// <exception cref="DependencyResolveException">If the type couldn't be resolved, an error will be thrown</exception>
-        public T Resolve<T>()
+        public T Resolve<T>([CanBeNull] string id = null)
         {
-            return (T)Resolve(typeof(T));
+            return (T)Resolve(typeof(T), id);
         }
 
         /// <summary>
@@ -496,11 +519,12 @@ namespace TheRealIronDuck.Ducktion
         /// twice, you will get the same instance. 
         /// </summary>
         /// <param name="type">The type which should be resolved</param>
+        /// <param name="id">The service ID which should be resolved</param>
         /// <returns>The singleton instance</returns>
         /// <exception cref="DependencyResolveException">If the type couldn't be resolved, an error will be thrown</exception>
-        public object Resolve(Type type)
+        public object Resolve(Type type, [CanBeNull] string id = null)
         {
-            return InnerResolve(type, new[] { type });
+            return InnerResolve(type, new[] { type }, id);
         }
 
         /// <summary>
@@ -509,18 +533,20 @@ namespace TheRealIronDuck.Ducktion
         /// </summary>
         /// <param name="type">The type which should be resolved</param>
         /// <param name="dependencyChain">Internal variable to keep track of the whole chain of dependencies</param>
+        /// <param name="id">The service ID which should be resolved</param>
         /// <returns>The singleton instance</returns>
         /// <exception cref="DependencyResolveException">If the type couldn't be resolved, an error will be thrown</exception>
-        private object InnerResolve(Type type, Type[] dependencyChain)
+        private object InnerResolve(Type type, Type[] dependencyChain, [CanBeNull] string id = null)
         {
-            if (!_services.ContainsKey(type) && !enableAutoResolve)
+            var key = new Tuple<string, Type>(id, type);
+            if (!_services.ContainsKey(key) && !enableAutoResolve)
             {
                 _logger?.Log(LogLevel.Error, $"Service {type} is not registered");
 
                 throw new DependencyResolveException(type, "Service is not registered");
             }
 
-            if (_services.TryGetValue(type, out var singleton) && singleton.Instance != null)
+            if (_services.TryGetValue(key, out var singleton) && singleton.Instance != null)
             {
                 return singleton.Instance;
             }
@@ -531,7 +557,7 @@ namespace TheRealIronDuck.Ducktion
 
                 if ((singleton.SingletonMode ?? defaultSingletonMode) == SingletonMode.Singleton)
                 {
-                    StoreAsSingleton(type, result);
+                    StoreAsSingleton(type, result, singleton.Id);
                 }
 
                 return result;
@@ -539,7 +565,7 @@ namespace TheRealIronDuck.Ducktion
 
             var targetType = type;
             var isAutoResolved = true;
-            if (_services.TryGetValue(type, out var realType))
+            if (_services.TryGetValue(key, out var realType))
             {
                 isAutoResolved = false;
                 targetType = realType.ServiceType;
@@ -595,7 +621,7 @@ namespace TheRealIronDuck.Ducktion
 
             if (storeSingleton)
             {
-                StoreAsSingleton(type, instance);
+                StoreAsSingleton(type, instance, id);
             }
 
             _logger?.Log(
@@ -605,7 +631,7 @@ namespace TheRealIronDuck.Ducktion
 
             return instance;
         }
-        
+
         #endregion
 
         #region HELPER METHODS
@@ -617,16 +643,18 @@ namespace TheRealIronDuck.Ducktion
         /// </summary>
         /// <param name="type">The type which should be registered</param>
         /// <param name="instance">The instance which should be stored as a singleton</param>
-        private void StoreAsSingleton(Type type, object instance)
+        private void StoreAsSingleton(Type type, object instance, [CanBeNull] string id)
         {
-            if (_services.TryGetValue(type, out var definition))
+            var key = new Tuple<string, Type>(id, type);
+
+            if (_services.TryGetValue(key, out var definition))
             {
                 definition.Instance = instance;
-                _services[type] = definition;
+                _services[key] = definition;
                 return;
             }
 
-            _services.Add(type, new ServiceDefinition(type) { Instance = instance });
+            _services.Add(key, new ServiceDefinition(type, id) { Instance = instance });
         }
 
         /// <summary>
@@ -667,7 +695,7 @@ namespace TheRealIronDuck.Ducktion
                     (!service.Value.LazyMode.HasValue && defaultLazyMode == LazyMode.NonLazy) ||
                     service.Value?.LazyMode == LazyMode.NonLazy
                 ).Select(service => service.Key)
-            ).ToList().ForEach(type => Resolve(type));
+            ).ToList().ForEach(type => Resolve(type.Item2, type.Item1));
         }
 
         #endregion

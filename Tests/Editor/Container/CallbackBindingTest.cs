@@ -97,6 +97,18 @@ namespace TheRealIronDuck.Ducktion.Editor.Tests.Editor.Container
         }
 
         [Test]
+        public void ItCanRegisterCallbacksWithAbstractServicesOrInterfacesUsingTheTypeParameter()
+        {
+            var simpleImplementation = new SimpleService();
+            var action = new Func<ISimpleInterface>(() => simpleImplementation);
+
+            container.Register(typeof(ISimpleInterface), action);
+
+            var service = container.Resolve<ISimpleInterface>();
+            Assert.AreSame(simpleImplementation, service);
+        }
+        
+        [Test]
         public void ItStoresTheCallbackResultsAsSingletonByDefault()
         {
             var calledCount = 0;

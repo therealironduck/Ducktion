@@ -45,8 +45,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - `NonSingleton()` to mark a service as non-singleton (Alias for `SetSingletonMode(SingletonMode.NonSingleton)`)
     - `Transient()` as an alias for `NonSingleton()`
 - Services can have IDs to be registered multiple times
-  - Added methods to service definition:
-    - `SetId(id)` to specify the ID
+  - The id can be specified in the registration methods
+  - By default every service is registered without an id
 - Services can be registered in configurators
   - Either by using the `IDiConfigurator` interface and manually registering the configurator
   - Or by using the `MonoDiConfigurator` component and adding it to the containers inspector

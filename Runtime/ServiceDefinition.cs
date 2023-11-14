@@ -20,6 +20,11 @@ namespace TheRealIronDuck.Ducktion
         public readonly Type ServiceType;
 
         /// <summary>
+        /// The service id. This can be used to register multiple services of the same type.
+        /// </summary>
+        [CanBeNull] public readonly string Id;
+
+        /// <summary>
         /// The singleton instance of the service. Can be null if the service is not a singleton
         /// or if the service has not been resolved yet.
         ///
@@ -33,11 +38,6 @@ namespace TheRealIronDuck.Ducktion
         /// Can only be set by the container.
         /// </summary>
         [CanBeNull] public Func<object> Callback { get; internal set; }
-
-        /// <summary>
-        /// The service id. This can be used to register multiple services of the same type.
-        /// </summary>
-        [CanBeNull] public string Id { get; private set; } = null;
 
         /// <summary>
         /// Specify if the service should be resolved lazily or not. By default, no lazy mode
@@ -55,9 +55,10 @@ namespace TheRealIronDuck.Ducktion
 
         #region LIFECYCLE METHODS
 
-        internal ServiceDefinition(Type serviceType)
+        internal ServiceDefinition(Type serviceType, [CanBeNull] string id)
         {
             ServiceType = serviceType;
+            Id = id;
         }
 
         #endregion
@@ -121,21 +122,6 @@ namespace TheRealIronDuck.Ducktion
         /// Mark this service as non singleton. Alias for `NonSingleton`.
         /// </summary>
         public ServiceDefinition Transient() => SetSingletonMode(Enums.SingletonMode.NonSingleton);
-        
-        #endregion
-
-        #region ID CONFIGURATION
-
-        /// <summary>
-        /// Set the ID
-        /// </summary>
-        /// <param name="id">The new ID</param>
-        public ServiceDefinition SetId(string id)
-        {
-            Id = id;
-
-            return this;
-        }
         
         #endregion
     }

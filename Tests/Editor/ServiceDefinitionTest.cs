@@ -67,23 +67,5 @@ namespace TheRealIronDuck.Ducktion.Editor.Tests.Editor
             Assert.That(definition.SingletonMode, Is.EqualTo(Enums.SingletonMode.Singleton));
             Assert.That(definition.LazyMode, Is.EqualTo(Enums.LazyMode.Lazy));
         }
-
-        [Test]
-        public void ItCanSetTheId()
-        {
-            var definition = container.Register<SimpleService>();
-            definition.SetId("test123");
-            Assert.That(definition.Id, Is.EqualTo("test123"));
-        }
-
-        [Test]
-        public void ItCanFluentlyChangeTheId()
-        {
-            var definition = container.Register<SimpleService>();
-            definition.SetId("test123").NonSingleton();
-            
-            Assert.That(definition.Id, Is.EqualTo("test123"));
-            Assert.That(definition.SingletonMode, Is.EqualTo(SingletonMode.NonSingleton));
-        }
     }
 }
