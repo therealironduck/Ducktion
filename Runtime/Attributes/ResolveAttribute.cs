@@ -13,7 +13,9 @@ namespace TheRealIronDuck.Ducktion.Attributes
     /// `DynamicDependencyResolver` component which can be used to resolve game objects that are created
     /// later on in the scene.
     /// </summary>
-    [AttributeUsage(AttributeTargets.Field | AttributeTargets.Property | AttributeTargets.Method)]
+    [AttributeUsage(
+        AttributeTargets.Field | AttributeTargets.Property | AttributeTargets.Method | AttributeTargets.Parameter
+    )]
     [MeansImplicitUse(ImplicitUseKindFlags.Assign)]
     public class ResolveAttribute : Attribute
     {

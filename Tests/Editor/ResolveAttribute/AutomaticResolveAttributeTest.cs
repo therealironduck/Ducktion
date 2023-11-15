@@ -5,7 +5,7 @@ using TheRealIronDuck.Ducktion.Logging;
 
 namespace TheRealIronDuck.Ducktion.Editor.Tests.Editor.ResolveAttribute
 {
-    public class SimpleResolveAttributeTest : DucktionTest
+    public class AutomaticResolveAttributeTest : DucktionTest
     {
         [Test]
         public void ItResolvesAnyPublicFieldWithAResolveAttributeWhenResolvingTheMainService()
@@ -122,7 +122,48 @@ namespace TheRealIronDuck.Ducktion.Editor.Tests.Editor.ResolveAttribute
             Assert.AreEqual(service.AnotherService, another2);
         }
         
-        // TEST IT can specify the ID for constructor arguments
-        // TEST IT can specify the ID for method parameters
+        [Test]
+        public void ItCanSpecifyIdsInConstructorArguments()
+        {
+            var simple1 = new SimpleService();
+            var simple2 = new SimpleService();
+            
+            // Register registered services
+            container.Register<SimpleService>(simple1);
+            container.Register<SimpleService>(simple2, "simple");
+            
+            container.Register<AnotherService>();
+            
+            container.Register<ServiceWithIdConstructorArguments>();
+            
+            // Resolve the main service
+            var service = container.Resolve<ServiceWithIdConstructorArguments>();
+            
+            // Ensure that both the resolve attribute and the constructor parameter are resolved
+            Assert.AreEqual(service.Simple, simple2);
+            Assert.NotNull(service.Another);
+        }
+        
+        [Test]
+        public void ItCanSpecifyIdsInMethodParameters()
+        {
+            var simple1 = new SimpleService();
+            var simple2 = new SimpleService();
+            
+            // Register registered services
+            container.Register<SimpleService>(simple1);
+            container.Register<SimpleService>(simple2, "simple");
+            
+            container.Register<AnotherService>();
+            
+            container.Register<ServiceWithIdMethodParameters>();
+            
+            // Resolve the main service
+            var service = container.Resolve<ServiceWithIdMethodParameters>();
+            
+            // Ensure that both the resolve attribute and the constructor parameter are resolved
+            Assert.AreEqual(service.Simple, simple2);
+            Assert.NotNull(service.Another);
+        }
     }
 }

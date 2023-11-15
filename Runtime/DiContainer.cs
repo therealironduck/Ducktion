@@ -618,38 +618,38 @@ namespace TheRealIronDuck.Ducktion
 
             foreach (var field in allFields)
             {
-                foreach (var attribute in field.GetCustomAttributes(false))
+                var attribute = field.GetCustomAttribute<ResolveAttribute>();
+                if (attribute == null)
                 {
-                    if (attribute is not ResolveAttribute resolve)
-                    {
-                        continue;
-                    }
+                    continue;
+                }
 
-                    switch (field)
-                    {
-                        case FieldInfo f1:
-                            f1.SetValue(
-                                instance,
-                                InnerResolve(f1.FieldType, dependencyChain.Append(f1.FieldType).ToArray(), resolve.Id)
-                            );
-                            break;
+                switch (field)
+                {
+                    case FieldInfo f1:
+                        f1.SetValue(
+                            instance,
+                            InnerResolve(
+                                f1.FieldType,
+                                dependencyChain.Append(f1.FieldType).ToArray(),
+                                attribute.Id
+                            )
+                        );
+                        break;
 
-                        case PropertyInfo p1:
-                            p1.SetValue(
-                                instance,
-                                InnerResolve(
-                                    p1.PropertyType,
-                                    dependencyChain.Append(p1.PropertyType).ToArray(),
-                                    resolve.Id
-                                )
-                            );
-                            break;
-                    }
-
-
-                    break;
+                    case PropertyInfo p1:
+                        p1.SetValue(
+                            instance,
+                            InnerResolve(
+                                p1.PropertyType,
+                                dependencyChain.Append(p1.PropertyType).ToArray(),
+                                attribute.Id
+                            )
+                        );
+                        break;
                 }
             }
+
             // END RESOLVE FIELDS AND PROPERTIES
 
             // START RESOLVE METHODS
@@ -657,21 +657,19 @@ namespace TheRealIronDuck.Ducktion
 
             foreach (var method in methods)
             {
-                foreach (var attribute in method.GetCustomAttributes())
+                var attribute = method.GetCustomAttribute<ResolveAttribute>();
+                if (attribute == null)
                 {
-                    if (attribute is not ResolveAttribute)
-                    {
-                        continue;
-                    }
-
-                    var methodParameters = ResolveParametersForMethod(
-                        type,
-                        dependencyChain,
-                        method
-                    );
-
-                    method.Invoke(instance, methodParameters.ToArray());
+                    continue;
                 }
+
+                var methodParameters = ResolveParametersForMethod(
+                    type,
+                    dependencyChain,
+                    method
+                );
+
+                method.Invoke(instance, methodParameters.ToArray());
             }
 
             // END RESOLVE METHODS
@@ -798,9 +796,10 @@ namespace TheRealIronDuck.Ducktion
                 try
                 {
                     var newChain = dependencyChain.Append(parameter.ParameterType).ToArray();
+                    var resolve = parameter.GetCustomAttribute<ResolveAttribute>();
 
                     // Here we will recursively resolve the parameter and extending the dependency chain
-                    parameters.Add(InnerResolve(parameter.ParameterType, newChain));
+                    parameters.Add(InnerResolve(parameter.ParameterType, newChain, resolve?.Id));
                 }
                 catch (DependencyResolveException exception)
                 {
