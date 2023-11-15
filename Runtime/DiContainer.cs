@@ -9,6 +9,7 @@ using TheRealIronDuck.Ducktion.Enums;
 using TheRealIronDuck.Ducktion.Exceptions;
 using TheRealIronDuck.Ducktion.Logging;
 using UnityEngine;
+using Object = UnityEngine.Object;
 
 namespace TheRealIronDuck.Ducktion
 {
@@ -132,6 +133,7 @@ namespace TheRealIronDuck.Ducktion
             _configurators.AddRange(defaultConfigurators);
 
             Reinitialize();
+            ResolveAllGameObjects();
         }
 
         #endregion
@@ -544,6 +546,16 @@ namespace TheRealIronDuck.Ducktion
         /// <param name="instance">The instance which should have its dependencies resolved</param>
         public void ResolveDependencies(object instance)
         {
+            if (instance is GameObject go)
+            {
+                var components = go.GetComponents<Component>();
+                foreach (var component in components)
+                {
+                    ResolveDependencies(component);
+                }
+                return;
+            }
+            
             var dependencyChain = new[] { instance.GetType() };
 
             const BindingFlags flags = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic;
@@ -700,6 +712,15 @@ namespace TheRealIronDuck.Ducktion
             return instance;
         }
 
+        private void ResolveAllGameObjects()
+        {
+            var allObjects = Object.FindObjectsOfType<GameObject>();
+            foreach (var gameObject in allObjects)
+            {
+                ResolveDependencies(gameObject);
+            }
+        }
+        
         #endregion
 
         #region HELPER METHODS
