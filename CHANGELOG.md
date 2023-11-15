@@ -49,6 +49,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - By default every service is registered without an id
 - Services can be resolved using the `[Resolve]` attribute
   - It works on public and private fields and properties
+  - It works on public and private methods
 - Services can be registered in configurators
   - Either by using the `IDiConfigurator` interface and manually registering the configurator
   - Or by using the `MonoDiConfigurator` component and adding it to the containers inspector

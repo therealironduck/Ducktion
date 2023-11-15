@@ -600,7 +600,7 @@ namespace TheRealIronDuck.Ducktion
             }
 
             // Resolve all parameters for the given constructor
-            var parameters = ResolveParametersForConstructor(type, dependencyChain, constructors);
+            var parameters = ResolveParametersForMethod(type, dependencyChain, constructors.FirstOrDefault());
 
             // Finally we instantiate the object with the given parameters
             var instance = Activator.CreateInstance(targetType, parameters.ToArray());
@@ -609,6 +609,7 @@ namespace TheRealIronDuck.Ducktion
             // For this we use a new dependency chain
             const BindingFlags flags = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic;
 
+            // START RESOLVE FIELDS AND PROPERTIES
             var fields = instance.GetType().GetFields(flags);
             var properties = instance.GetType().GetProperties(flags);
 
@@ -619,7 +620,7 @@ namespace TheRealIronDuck.Ducktion
             {
                 foreach (var attribute in field.GetCustomAttributes(false))
                 {
-                    if (attribute is not ResolveAttribute)
+                    if (attribute is not ResolveAttribute resolve)
                     {
                         continue;
                     }
@@ -629,14 +630,18 @@ namespace TheRealIronDuck.Ducktion
                         case FieldInfo f1:
                             f1.SetValue(
                                 instance,
-                                InnerResolve(f1.FieldType, dependencyChain.Append(f1.FieldType).ToArray())
+                                InnerResolve(f1.FieldType, dependencyChain.Append(f1.FieldType).ToArray(), resolve.Id)
                             );
                             break;
 
                         case PropertyInfo p1:
                             p1.SetValue(
                                 instance,
-                                InnerResolve(p1.PropertyType, dependencyChain.Append(p1.PropertyType).ToArray())
+                                InnerResolve(
+                                    p1.PropertyType,
+                                    dependencyChain.Append(p1.PropertyType).ToArray(),
+                                    resolve.Id
+                                )
                             );
                             break;
                     }
@@ -645,6 +650,31 @@ namespace TheRealIronDuck.Ducktion
                     break;
                 }
             }
+            // END RESOLVE FIELDS AND PROPERTIES
+
+            // START RESOLVE METHODS
+            var methods = instance.GetType().GetMethods(flags);
+
+            foreach (var method in methods)
+            {
+                foreach (var attribute in method.GetCustomAttributes())
+                {
+                    if (attribute is not ResolveAttribute)
+                    {
+                        continue;
+                    }
+
+                    var methodParameters = ResolveParametersForMethod(
+                        type,
+                        dependencyChain,
+                        method
+                    );
+
+                    method.Invoke(instance, methodParameters.ToArray());
+                }
+            }
+
+            // END RESOLVE METHODS
 
             // This is a complex check to determine if the resolved service should be stored as a singleton
             // Basically it will be stored if:
@@ -736,55 +766,51 @@ namespace TheRealIronDuck.Ducktion
         }
 
         /// <summary>
-        /// This method takes a constructor array and resolves all required parameters for the given
-        /// constructor.
+        /// This method takes a method and resolves all required parameters for the given method.
         /// </summary>
         /// <param name="type">The type which gets resolved</param>
         /// <param name="dependencyChain">The current dependency chain</param>
-        /// <param name="constructors">The constructors of the object</param>
+        /// <param name="method">The method which parameters should be resolved</param>
         /// <returns>A list of all resolved parameters</returns>
         /// <exception cref="DependencyResolveException">If something couldn't be resolved, an exception is thrown</exception>
-        private List<object> ResolveParametersForConstructor(
+        private List<object> ResolveParametersForMethod(
             Type type,
             Type[] dependencyChain,
-            IEnumerable<ConstructorInfo> constructors
+            MethodBase method
         )
         {
             var parameters = new List<object>();
 
-            foreach (var constructorInfo in constructors)
+            foreach (var parameter in method.GetParameters())
             {
-                foreach (var parameter in constructorInfo.GetParameters())
+                // If the given parameter was already resolved in the current chain, we will throw an error
+                // This is to prevent circular dependencies
+                if (dependencyChain.Contains(parameter.ParameterType))
                 {
-                    // If the given parameter was already resolved in the current chain, we will throw an error
-                    // This is to prevent circular dependencies
-                    if (dependencyChain.Contains(parameter.ParameterType))
-                    {
-                        _logger?.Log(LogLevel.Error, $"Service {type} has a circular dependency");
+                    _logger?.Log(LogLevel.Error, $"Service {type} has a circular dependency");
 
-                        throw new DependencyResolveException(
-                            type,
-                            $"Circular dependency detected for parameter `{parameter.Name}`"
-                        );
-                    }
+                    throw new DependencyResolveException(
+                        type,
+                        $"Circular dependency detected for parameter `{parameter.Name}`"
+                    );
+                }
 
-                    try
-                    {
-                        var newChain = dependencyChain.Append(parameter.ParameterType).ToArray();
+                try
+                {
+                    var newChain = dependencyChain.Append(parameter.ParameterType).ToArray();
 
-                        // Here we will recursively resolve the parameter and extending the dependency chain
-                        parameters.Add(InnerResolve(parameter.ParameterType, newChain));
-                    }
-                    catch (DependencyResolveException exception)
-                    {
-                        _logger?.Log(LogLevel.Error, $"Service {type} cant resolve parameter: {parameter.Name}");
+                    // Here we will recursively resolve the parameter and extending the dependency chain
+                    parameters.Add(InnerResolve(parameter.ParameterType, newChain));
+                }
+                catch (DependencyResolveException exception)
+                {
+                    _logger?.Log(LogLevel.Error, $"Service {type} cant resolve parameter: {parameter.Name}");
 
-                        throw new DependencyResolveException(
-                            type,
-                            $"Parameter `{parameter.Name}` could not be resolved",
-                            exception
-                        );
-                    }
+                    throw new DependencyResolveException(
+                        type,
+                        $"Parameter `{parameter.Name}` could not be resolved",
+                        exception
+                    );
                 }
             }
 
