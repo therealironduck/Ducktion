@@ -604,11 +604,18 @@ namespace TheRealIronDuck.Ducktion
 
             // Finally we instantiate the object with the given parameters
             var instance = Activator.CreateInstance(targetType, parameters.ToArray());
-            
+
             // Next we check every property for the resolve attribute and set their values as well
             // For this we use a new dependency chain
-            var fields = instance.GetType().GetFields(BindingFlags.Instance | BindingFlags.Public);
-            foreach (var field in fields)
+            const BindingFlags flags = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic;
+
+            var fields = instance.GetType().GetFields(flags);
+            var properties = instance.GetType().GetProperties(flags);
+
+            // Combine them in one list
+            var allFields = fields.Cast<MemberInfo>().Concat(properties).ToArray();
+
+            foreach (var field in allFields)
             {
                 foreach (var attribute in field.GetCustomAttributes(false))
                 {
@@ -617,13 +624,28 @@ namespace TheRealIronDuck.Ducktion
                         continue;
                     }
 
-                    var newChain = dependencyChain.Append(field.FieldType).ToArray();
-                    field.SetValue(instance, InnerResolve(field.FieldType, newChain));
-                    
+                    switch (field)
+                    {
+                        case FieldInfo f1:
+                            f1.SetValue(
+                                instance,
+                                InnerResolve(f1.FieldType, dependencyChain.Append(f1.FieldType).ToArray())
+                            );
+                            break;
+
+                        case PropertyInfo p1:
+                            p1.SetValue(
+                                instance,
+                                InnerResolve(p1.PropertyType, dependencyChain.Append(p1.PropertyType).ToArray())
+                            );
+                            break;
+                    }
+
+
                     break;
                 }
             }
-            
+
             // This is a complex check to determine if the resolved service should be stored as a singleton
             // Basically it will be stored if:
             // (a) auto resolve is enabled and the auto resolve singleton mode is set to singleton

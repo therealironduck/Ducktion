@@ -1,4 +1,5 @@
 using System;
+using JetBrains.Annotations;
 
 namespace TheRealIronDuck.Ducktion.Attributes
 {
@@ -12,9 +13,9 @@ namespace TheRealIronDuck.Ducktion.Attributes
     /// `DynamicDependencyResolver` component which can be used to resolve game objects that are created
     /// later on in the scene.
     /// </summary>
-    [AttributeUsage(AttributeTargets.Field)]
+    [AttributeUsage(AttributeTargets.Field | AttributeTargets.Property)]
+    [MeansImplicitUse(ImplicitUseKindFlags.Assign)]
     public class ResolveAttribute : Attribute
     {
-        
     }
 }
