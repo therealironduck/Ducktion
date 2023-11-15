@@ -535,6 +535,76 @@ namespace TheRealIronDuck.Ducktion
         {
             return InnerResolve(type, new[] { type }, id);
         }
+        
+        /// <summary>
+        /// Resolve any [Resolve] attribute usages in the given instance. This will resolve all
+        /// properties and fields which have the [Resolve] attribute, as well as all methods which
+        /// contain the [Resolve] attribute.
+        /// </summary>
+        /// <param name="instance">The instance which should have its dependencies resolved</param>
+        public void ResolveDependencies(object instance)
+        {
+            var dependencyChain = new[] { instance.GetType() };
+
+            const BindingFlags flags = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic;
+
+            var fields = instance.GetType().GetFields(flags);
+            var properties = instance.GetType().GetProperties(flags);
+            var allFields = fields.Cast<MemberInfo>().Concat(properties).ToArray();
+
+            foreach (var field in allFields)
+            {
+                var attribute = field.GetCustomAttribute<ResolveAttribute>();
+                if (attribute == null)
+                {
+                    continue;
+                }
+
+                switch (field)
+                {
+                    case FieldInfo f1:
+                        f1.SetValue(
+                            instance,
+                            InnerResolve(
+                                f1.FieldType,
+                                dependencyChain.Append(f1.FieldType).ToArray(),
+                                attribute.Id
+                            )
+                        );
+                        break;
+
+                    case PropertyInfo p1:
+                        p1.SetValue(
+                            instance,
+                            InnerResolve(
+                                p1.PropertyType,
+                                dependencyChain.Append(p1.PropertyType).ToArray(),
+                                attribute.Id
+                            )
+                        );
+                        break;
+                }
+            }
+
+            var methods = instance.GetType().GetMethods(flags);
+
+            foreach (var method in methods)
+            {
+                var attribute = method.GetCustomAttribute<ResolveAttribute>();
+                if (attribute == null)
+                {
+                    continue;
+                }
+
+                var methodParameters = ResolveParametersForMethod(
+                    instance.GetType(),
+                    dependencyChain,
+                    method
+                );
+
+                method.Invoke(instance, methodParameters.ToArray());
+            }
+        }
 
         /// <summary>
         /// Inner logic to resolve a component. This method handles the recursive resolving of all
@@ -604,75 +674,9 @@ namespace TheRealIronDuck.Ducktion
 
             // Finally we instantiate the object with the given parameters
             var instance = Activator.CreateInstance(targetType, parameters.ToArray());
-
-            // Next we check every property for the resolve attribute and set their values as well
-            // For this we use a new dependency chain
-            const BindingFlags flags = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic;
-
-            // START RESOLVE FIELDS AND PROPERTIES
-            var fields = instance.GetType().GetFields(flags);
-            var properties = instance.GetType().GetProperties(flags);
-
-            // Combine them in one list
-            var allFields = fields.Cast<MemberInfo>().Concat(properties).ToArray();
-
-            foreach (var field in allFields)
-            {
-                var attribute = field.GetCustomAttribute<ResolveAttribute>();
-                if (attribute == null)
-                {
-                    continue;
-                }
-
-                switch (field)
-                {
-                    case FieldInfo f1:
-                        f1.SetValue(
-                            instance,
-                            InnerResolve(
-                                f1.FieldType,
-                                dependencyChain.Append(f1.FieldType).ToArray(),
-                                attribute.Id
-                            )
-                        );
-                        break;
-
-                    case PropertyInfo p1:
-                        p1.SetValue(
-                            instance,
-                            InnerResolve(
-                                p1.PropertyType,
-                                dependencyChain.Append(p1.PropertyType).ToArray(),
-                                attribute.Id
-                            )
-                        );
-                        break;
-                }
-            }
-
-            // END RESOLVE FIELDS AND PROPERTIES
-
-            // START RESOLVE METHODS
-            var methods = instance.GetType().GetMethods(flags);
-
-            foreach (var method in methods)
-            {
-                var attribute = method.GetCustomAttribute<ResolveAttribute>();
-                if (attribute == null)
-                {
-                    continue;
-                }
-
-                var methodParameters = ResolveParametersForMethod(
-                    type,
-                    dependencyChain,
-                    method
-                );
-
-                method.Invoke(instance, methodParameters.ToArray());
-            }
-
-            // END RESOLVE METHODS
+            
+            // And resolve all dependencies that occur because of the Resolve attribute
+            ResolveDependencies(instance);
 
             // This is a complex check to determine if the resolved service should be stored as a singleton
             // Basically it will be stored if:

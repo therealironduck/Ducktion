@@ -25,6 +25,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Added method `Override(Type, Callback)` to override any service with a specific callback
   - Added method `Resolve<T>` to resolve a service
   - Added method `Resolve(Type)` to resolve a service
+  - Added method `ResolveDependencies(Instance)` to resolve all dependencies with the `[Resolve]`attribute
   - Added method `Clear` to remove any registered service and singleton instance
   - Added method `ResetSingletons` to remove any singleton instance
   - Added method `AddConfigurator(configurator)` to register a configurator

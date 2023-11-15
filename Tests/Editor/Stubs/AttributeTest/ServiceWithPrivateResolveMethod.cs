@@ -1,5 +1,4 @@
 using TheRealIronDuck.Ducktion.Logging;
-using UnityEngine;
 
 namespace TheRealIronDuck.Ducktion.Editor.Tests.Editor.Stubs.AttributeTest
 {
