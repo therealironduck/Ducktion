@@ -22,7 +22,7 @@ namespace TheRealIronDuck.Ducktion.Editor.Tests.Editor
         }
 
         [TearDown]
-        public void TearDown()
+        public virtual void TearDown()
         {
             Ducktion.Clear();
         }
