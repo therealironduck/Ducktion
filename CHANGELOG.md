@@ -52,6 +52,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - It works on public and private fields and properties
   - It works on public and private methods
   - The attribute takes an optional id parameter
+- Add component: `DynamicDependencyResolver`
+  - It resolves all dependencies of `[Resolve]` attributes for game-objects that are instantiated at runtime
 - Services can be registered in configurators
   - Either by using the `IDiConfigurator` interface and manually registering the configurator
   - Or by using the `MonoDiConfigurator` component and adding it to the containers inspector
