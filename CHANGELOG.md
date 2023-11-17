@@ -25,6 +25,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Added method `Override(Type, Callback)` to override any service with a specific callback
   - Added method `Resolve<T>` to resolve a service
   - Added method `Resolve(Type)` to resolve a service
+  - Added method `ResolveDependencies(Instance)` to resolve all dependencies with the `[Resolve]`attribute
   - Added method `Clear` to remove any registered service and singleton instance
   - Added method `ResetSingletons` to remove any singleton instance
   - Added method `AddConfigurator(configurator)` to register a configurator
@@ -47,6 +48,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Services can have IDs to be registered multiple times
   - The id can be specified in the registration methods
   - By default every service is registered without an id
+- Services can be resolved using the `[Resolve]` attribute
+  - It works on public and private fields and properties
+  - It works on public and private methods
+  - The attribute takes an optional id parameter
+- Add component: `DynamicDependencyResolver`
+  - It resolves all dependencies of `[Resolve]` attributes for game-objects that are instantiated at runtime
 - Services can be registered in configurators
   - Either by using the `IDiConfigurator` interface and manually registering the configurator
   - Or by using the `MonoDiConfigurator` component and adding it to the containers inspector

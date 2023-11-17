@@ -1,7 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using JetBrains.Annotations;
+using TheRealIronDuck.Ducktion.Attributes;
 using TheRealIronDuck.Ducktion.Configurators;
 using TheRealIronDuck.Ducktion.Enums;
 using TheRealIronDuck.Ducktion.Exceptions;
@@ -130,6 +132,7 @@ namespace TheRealIronDuck.Ducktion
             _configurators.AddRange(defaultConfigurators);
 
             Reinitialize();
+            ResolveAllGameObjects();
         }
 
         #endregion
@@ -533,6 +536,86 @@ namespace TheRealIronDuck.Ducktion
         {
             return InnerResolve(type, new[] { type }, id);
         }
+        
+        /// <summary>
+        /// Resolve any [Resolve] attribute usages in the given instance. This will resolve all
+        /// properties and fields which have the [Resolve] attribute, as well as all methods which
+        /// contain the [Resolve] attribute.
+        /// </summary>
+        /// <param name="instance">The instance which should have its dependencies resolved</param>
+        public void ResolveDependencies(object instance)
+        {
+            if (instance is GameObject go)
+            {
+                var components = go.GetComponents<Component>();
+                foreach (var component in components)
+                {
+                    ResolveDependencies(component);
+                }
+                return;
+            }
+            
+            var dependencyChain = new[] { instance.GetType() };
+
+            const BindingFlags flags = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic;
+
+            var fields = instance.GetType().GetFields(flags);
+            var properties = instance.GetType().GetProperties(flags);
+            var allFields = fields.Cast<MemberInfo>().Concat(properties).ToArray();
+
+            foreach (var field in allFields)
+            {
+                var attribute = field.GetCustomAttribute<ResolveAttribute>();
+                if (attribute == null)
+                {
+                    continue;
+                }
+
+                switch (field)
+                {
+                    case FieldInfo f1:
+                        f1.SetValue(
+                            instance,
+                            InnerResolve(
+                                f1.FieldType,
+                                dependencyChain.Append(f1.FieldType).ToArray(),
+                                attribute.Id
+                            )
+                        );
+                        break;
+
+                    case PropertyInfo p1:
+                        p1.SetValue(
+                            instance,
+                            InnerResolve(
+                                p1.PropertyType,
+                                dependencyChain.Append(p1.PropertyType).ToArray(),
+                                attribute.Id
+                            )
+                        );
+                        break;
+                }
+            }
+
+            var methods = instance.GetType().GetMethods(flags);
+
+            foreach (var method in methods)
+            {
+                var attribute = method.GetCustomAttribute<ResolveAttribute>();
+                if (attribute == null)
+                {
+                    continue;
+                }
+
+                var methodParameters = ResolveParametersForMethod(
+                    instance.GetType(),
+                    dependencyChain,
+                    method
+                );
+
+                method.Invoke(instance, methodParameters.ToArray());
+            }
+        }
 
         /// <summary>
         /// Inner logic to resolve a component. This method handles the recursive resolving of all
@@ -545,7 +628,11 @@ namespace TheRealIronDuck.Ducktion
         /// <exception cref="DependencyResolveException">If the type couldn't be resolved, an error will be thrown</exception>
         private object InnerResolve(Type type, Type[] dependencyChain, [CanBeNull] string id = null)
         {
+            // We generate the service definition key, which is a combination of the ID and the type.
             var key = new Tuple<string, Type>(id, type);
+
+            // If there is no service registered for that ID / type combination
+            // AND auto resolve isn't enabled, we will throw an exception and cancel right away
             if (!_services.ContainsKey(key) && !enableAutoResolve)
             {
                 _logger?.Log(LogLevel.Error, $"Service {type} is not registered");
@@ -553,31 +640,38 @@ namespace TheRealIronDuck.Ducktion
                 throw new DependencyResolveException(type, "Service is not registered");
             }
 
-            if (_services.TryGetValue(key, out var singleton) && singleton.Instance != null)
+            // Next we check if there is already a registered singleton instance for the given type.
+            // If so, we will just return it
+            if (_services.TryGetValue(key, out var service) && service.Instance != null)
             {
-                return singleton.Instance;
+                return service.Instance;
             }
 
-            if (singleton?.Callback != null)
+            // Next we check if there is a callback which should be executed
+            if (service?.Callback != null)
             {
-                var result = singleton.Callback();
+                // If so, we will execute the callback
+                var result = service.Callback();
 
-                if ((singleton.SingletonMode ?? defaultSingletonMode) == SingletonMode.Singleton)
+                // If the service is in singleton mode, we will store the instance
+                // If no singleton mode is specified, we will use the default singleton mode
+                if ((service.SingletonMode ?? defaultSingletonMode) == SingletonMode.Singleton)
                 {
-                    StoreAsSingleton(type, result, singleton.Id);
+                    StoreAsSingleton(type, result, service.Id);
                 }
 
+                // Anyway, return the resolved instance
                 return result;
             }
 
-            var targetType = type;
-            var isAutoResolved = true;
-            if (_services.TryGetValue(key, out var realType))
-            {
-                isAutoResolved = false;
-                targetType = realType.ServiceType;
-            }
+            // Here we check the actual type we need to resolve.
+            // If the service isn't registered we just take the original type given. Otherwise we take the
+            // registered type.
+            var targetType = service?.ServiceType ?? type;
+            var isAutoResolved = service == null;
 
+            // Get all constructors. If there are more than one, we will throw an error
+            // This may be changed in the future, but for now we will keep it like this
             var constructors = targetType.GetConstructors();
             if (constructors.Length > 1)
             {
@@ -586,44 +680,22 @@ namespace TheRealIronDuck.Ducktion
                 throw new DependencyResolveException(targetType, "Service has more than one constructor");
             }
 
-            var parameters = new List<object>();
+            // Resolve all parameters for the given constructor
+            var parameters = ResolveParametersForMethod(type, dependencyChain, constructors.FirstOrDefault());
 
-            foreach (var constructorInfo in constructors)
-            {
-                foreach (var parameter in constructorInfo.GetParameters())
-                {
-                    if (dependencyChain.Contains(parameter.ParameterType))
-                    {
-                        _logger?.Log(LogLevel.Error, $"Service {type} has a circular dependency");
-
-                        throw new DependencyResolveException(
-                            type,
-                            $"Circular dependency detected for parameter `{parameter.Name}`"
-                        );
-                    }
-
-                    try
-                    {
-                        var newChain = dependencyChain.Append(parameter.ParameterType).ToArray();
-
-                        parameters.Add(InnerResolve(parameter.ParameterType, newChain));
-                    }
-                    catch (DependencyResolveException exception)
-                    {
-                        _logger?.Log(LogLevel.Error, $"Service {type} cant resolve parameter: {parameter.Name}");
-
-                        throw new DependencyResolveException(
-                            type,
-                            $"Parameter `{parameter.Name}` could not be resolved",
-                            exception
-                        );
-                    }
-                }
-            }
-
+            // Finally we instantiate the object with the given parameters
             var instance = Activator.CreateInstance(targetType, parameters.ToArray());
+            
+            // And resolve all dependencies that occur because of the Resolve attribute
+            ResolveDependencies(instance);
+
+            // This is a complex check to determine if the resolved service should be stored as a singleton
+            // Basically it will be stored if:
+            // (a) auto resolve is enabled and the auto resolve singleton mode is set to singleton
+            // or (b) auto resolve is disabled and the service singleton mode is set to singleton
+            // If in case (b) the service singleton mode is not set, we will use the default singleton mode
             var storeSingleton = (isAutoResolved && autoResolveSingletonMode == SingletonMode.Singleton) ||
-                                 (!isAutoResolved && (singleton?.SingletonMode ?? defaultSingletonMode) ==
+                                 (!isAutoResolved && (service?.SingletonMode ?? defaultSingletonMode) ==
                                      SingletonMode.Singleton);
 
             if (storeSingleton)
@@ -639,6 +711,18 @@ namespace TheRealIronDuck.Ducktion
             return instance;
         }
 
+        /// <summary>
+        /// Iterate through each active game object and resolve all dependencies.
+        /// </summary>
+        private void ResolveAllGameObjects()
+        {
+            var allObjects = FindObjectsOfType<GameObject>();
+            foreach (var go in allObjects)
+            {
+                ResolveDependencies(go);
+            }
+        }
+        
         #endregion
 
         #region HELPER METHODS
@@ -650,6 +734,7 @@ namespace TheRealIronDuck.Ducktion
         /// </summary>
         /// <param name="type">The type which should be registered</param>
         /// <param name="instance">The instance which should be stored as a singleton</param>
+        /// <param name="id">The ID of the service</param>
         private void StoreAsSingleton(Type type, object instance, [CanBeNull] string id)
         {
             var key = new Tuple<string, Type>(id, type);
@@ -703,6 +788,59 @@ namespace TheRealIronDuck.Ducktion
                     service.Value?.LazyMode == LazyMode.NonLazy
                 ).Select(service => service.Key)
             ).ToList().ForEach(type => Resolve(type.Item2, type.Item1));
+        }
+
+        /// <summary>
+        /// This method takes a method and resolves all required parameters for the given method.
+        /// </summary>
+        /// <param name="type">The type which gets resolved</param>
+        /// <param name="dependencyChain">The current dependency chain</param>
+        /// <param name="method">The method which parameters should be resolved</param>
+        /// <returns>A list of all resolved parameters</returns>
+        /// <exception cref="DependencyResolveException">If something couldn't be resolved, an exception is thrown</exception>
+        private List<object> ResolveParametersForMethod(
+            Type type,
+            Type[] dependencyChain,
+            MethodBase method
+        )
+        {
+            var parameters = new List<object>();
+
+            foreach (var parameter in method.GetParameters())
+            {
+                // If the given parameter was already resolved in the current chain, we will throw an error
+                // This is to prevent circular dependencies
+                if (dependencyChain.Contains(parameter.ParameterType))
+                {
+                    _logger?.Log(LogLevel.Error, $"Service {type} has a circular dependency");
+
+                    throw new DependencyResolveException(
+                        type,
+                        $"Circular dependency detected for parameter `{parameter.Name}`"
+                    );
+                }
+
+                try
+                {
+                    var newChain = dependencyChain.Append(parameter.ParameterType).ToArray();
+                    var resolve = parameter.GetCustomAttribute<ResolveAttribute>();
+
+                    // Here we will recursively resolve the parameter and extending the dependency chain
+                    parameters.Add(InnerResolve(parameter.ParameterType, newChain, resolve?.Id));
+                }
+                catch (DependencyResolveException exception)
+                {
+                    _logger?.Log(LogLevel.Error, $"Service {type} cant resolve parameter: {parameter.Name}");
+
+                    throw new DependencyResolveException(
+                        type,
+                        $"Parameter `{parameter.Name}` could not be resolved",
+                        exception
+                    );
+                }
+            }
+
+            return parameters;
         }
 
         #endregion
