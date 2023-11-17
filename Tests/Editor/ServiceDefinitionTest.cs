@@ -67,5 +67,20 @@ namespace TheRealIronDuck.Ducktion.Editor.Tests.Editor
             Assert.That(definition.SingletonMode, Is.EqualTo(Enums.SingletonMode.Singleton));
             Assert.That(definition.LazyMode, Is.EqualTo(Enums.LazyMode.Lazy));
         }
+
+        [Test]
+        public void ItCanSetTheInstance()
+        {
+            var instance = new SimpleService();
+            
+            var definition = container.Register<SimpleService>();
+            definition.SetInstance(instance);
+            Assert.That(definition.Instance, Is.SameAs(instance));
+            
+            definition.SetInstance(null);
+            Assert.That(definition.Instance, Is.Null);
+        }
+        
+        // TODO: Fluent setinstance
     }
 }

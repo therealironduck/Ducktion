@@ -124,5 +124,15 @@ namespace TheRealIronDuck.Ducktion
         public ServiceDefinition Transient() => SetSingletonMode(Enums.SingletonMode.NonSingleton);
         
         #endregion
+
+        #region INSTANCE CONFIGURATION
+
+        public void SetInstance(object instance)
+        {
+            Instance = instance;
+        }
+
+        #endregion
+        
     }
 }
