@@ -9,7 +9,6 @@ using TheRealIronDuck.Ducktion.Enums;
 using TheRealIronDuck.Ducktion.Exceptions;
 using TheRealIronDuck.Ducktion.Logging;
 using UnityEngine;
-using Object = UnityEngine.Object;
 
 namespace TheRealIronDuck.Ducktion
 {
@@ -712,12 +711,15 @@ namespace TheRealIronDuck.Ducktion
             return instance;
         }
 
+        /// <summary>
+        /// Iterate through each active game object and resolve all dependencies.
+        /// </summary>
         private void ResolveAllGameObjects()
         {
-            var allObjects = Object.FindObjectsOfType<GameObject>();
-            foreach (var gameObject in allObjects)
+            var allObjects = FindObjectsOfType<GameObject>();
+            foreach (var go in allObjects)
             {
-                ResolveDependencies(gameObject);
+                ResolveDependencies(go);
             }
         }
         
