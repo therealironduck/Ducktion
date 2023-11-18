@@ -55,7 +55,7 @@ namespace TheRealIronDuck.Ducktion.Editor.Tests.Editor.Container
         public void ItCanRegisterCallbackBasedServicesAsNonSingleton()
         {
             // We register any service
-            container.Register<SimpleService>(() => new SimpleService()).NonSingleton();
+            container.Register<SimpleService>().SetCallback(() => new SimpleService()).NonSingleton();
 
             // We resolve the service twice
             var service1 = container.Resolve<SimpleService>();
@@ -71,7 +71,7 @@ namespace TheRealIronDuck.Ducktion.Editor.Tests.Editor.Container
             container.Configure(newDefaultSingletonMode: SingletonMode.NonSingleton);
 
             // We register any service
-            container.Register<SimpleService>(() => new SimpleService());
+            container.Register<SimpleService>().SetCallback(() => new SimpleService());
 
             // We resolve the service twice
             var service1 = container.Resolve<SimpleService>();

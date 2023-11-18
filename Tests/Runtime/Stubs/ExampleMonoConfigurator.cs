@@ -11,7 +11,7 @@ namespace TheRealIronDuck.Ducktion.Tests.Stubs
         {
             container.Register<ISimpleInterface, SimpleService>();
             container.Register<ScalarService>().SetInstance(new ScalarService(123));
-            container.Register<AnotherService>(() => new AnotherService());
+            container.Register<AnotherService>().SetCallback(() => new AnotherService());
 
             called = true;
         }

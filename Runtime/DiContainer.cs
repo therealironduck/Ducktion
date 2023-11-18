@@ -308,42 +308,6 @@ namespace TheRealIronDuck.Ducktion
         public ServiceDefinition Register<TKey, TService>([CanBeNull] string id = null) where TService : TKey =>
             Register(typeof(TKey), typeof(TService), id);
 
-        /// <summary>
-        /// Register a callback which gets called on resolve. This is useful if you want to resolve
-        /// a service which requires some parameters. The callback will be called on resolve and
-        /// be stored as a singleton.
-        /// more information.
-        /// </summary>
-        /// <param name="type">The type which should be registered</param>
-        /// <param name="callback">The callback which gets called on resolve. Must return an instance</param>
-        /// <param name="id">The id of the service</param>
-        /// <exception cref="DependencyRegisterException">If the registration fails, it will throw an error</exception>
-        public ServiceDefinition Register<T>(Type type, Func<T> callback, [CanBeNull] string id = null)
-        {
-            var serviceType = callback.Method.ReturnType.IsAbstract ? typeof(object) : type;
-            var definition = Register(type, serviceType, id);
-            definition.Callback = () => callback();
-
-            return definition;
-        }
-
-        /// <summary>
-        /// Register a callback which gets called on resolve. This is useful if you want to resolve
-        /// a service which requires some parameters. The callback will be called on resolve and
-        /// be stored as a singleton.
-        /// more information.
-        ///
-        /// Since the definition requires a Func(object), we can't simply pass the callback
-        /// directly. Instead we wrap the callback into another callback. Quite hacky, but
-        /// it is what it is.
-        /// </summary>
-        /// <typeparam name="T">The type which should be registered</typeparam>
-        /// <param name="callback">The callback which gets called on resolve. Must return an instance</param>
-        /// <param name="id">The id of the service</param>
-        /// <exception cref="DependencyRegisterException">If the registration fails, it will throw an error</exception>
-        public ServiceDefinition Register<T>(Func<T> callback, [CanBeNull] string id = null) =>
-            Register(typeof(T), callback, id);
-
         #endregion
 
         #region OVERRIDDING SERVICES
@@ -434,50 +398,6 @@ namespace TheRealIronDuck.Ducktion
         /// <param name="id">The id of the service</param>
         /// <exception cref="DependencyRegisterException">If the service doesn't exists, it will throw an error</exception>
         public ServiceDefinition Override<TKey>([CanBeNull] string id = null) => Override(typeof(TKey), id);
-
-        /// <summary>
-        /// Override a service with a callback which gets called on resolve. This is useful if you
-        /// want to resolve a service which requires some parameters. The callback will be called on
-        /// resolve and be stored as a singleton.
-        /// for more information.
-        /// </summary>
-        /// <param name="keyType">The type which gets registered</param>
-        /// <param name="callback">The callback which gets called on resolve. Must return an instance</param>
-        /// <param name="id">The id of the service</param>
-        /// <exception cref="DependencyRegisterException">If the override fails, it will throw an error</exception>
-        public ServiceDefinition Override(Type keyType, Func<object> callback, [CanBeNull] string id = null)
-        {
-            var key = new Tuple<string, Type>(id, keyType);
-            if (!_services.ContainsKey(key))
-            {
-                _logger.Log(LogLevel.Error, $"Service {keyType} is not registered");
-
-                throw new DependencyRegisterException(
-                    keyType,
-                    "Service is not registered. Use `register` to register the service"
-                );
-            }
-
-            _services[key].SetInstance(null);
-            _services[key].Callback = callback;
-
-            _logger.Log(LogLevel.Debug, $"Overridden service: {keyType} with callback");
-
-            return _services[key];
-        }
-
-        /// <summary>
-        /// Override a service with a callback which gets called on resolve. This is useful if you
-        /// want to resolve a service which requires some parameters. The callback will be called on
-        /// resolve and be stored as a singleton.
-        /// for more information.
-        /// </summary>
-        /// <typeparam name="T">The type which gets registered</typeparam>
-        /// <param name="callback">The callback which gets called on resolve. Must return an instance</param>
-        /// <param name="id">The id of the service</param>
-        /// <exception cref="DependencyRegisterException">If the override fails, it will throw an error</exception>
-        public ServiceDefinition Override<T>(Func<T> callback, [CanBeNull] string id = null) =>
-            Override(typeof(T), () => callback(), id);
 
         #endregion
 

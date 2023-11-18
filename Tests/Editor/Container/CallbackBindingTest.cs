@@ -17,7 +17,7 @@ namespace TheRealIronDuck.Ducktion.Editor.Tests.Editor.Container
                 return new ScalarService(123);
             });
 
-            container.Register<ScalarService>(action);
+            container.Register<ScalarService>().SetCallback(action);
             Assert.IsFalse(called);
 
             var service = container.Resolve<ScalarService>();
@@ -36,7 +36,7 @@ namespace TheRealIronDuck.Ducktion.Editor.Tests.Editor.Container
                 return new ScalarService(123);
             });
 
-            container.Register(typeof(ScalarService), action);
+            container.Register(typeof(ScalarService)).SetCallback(action);
             Assert.IsFalse(called);
 
             var service = container.Resolve<ScalarService>();
@@ -51,7 +51,7 @@ namespace TheRealIronDuck.Ducktion.Editor.Tests.Editor.Container
 
             container.Register<ScalarService>();
 
-            container.Override<ScalarService>(action);
+            container.Override<ScalarService>().SetCallback(action);
 
             var service = container.Resolve<ScalarService>();
             Assert.AreEqual(123, service.Value);
@@ -65,7 +65,7 @@ namespace TheRealIronDuck.Ducktion.Editor.Tests.Editor.Container
             var existing = new ScalarService(42);
             container.Register<ScalarService>().SetInstance(existing);
 
-            container.Override<ScalarService>(action);
+            container.Override<ScalarService>().SetCallback(action);
 
             var service = container.Resolve<ScalarService>();
             Assert.AreEqual(123, service.Value);
@@ -78,34 +78,10 @@ namespace TheRealIronDuck.Ducktion.Editor.Tests.Editor.Container
 
             container.Register<ScalarService>();
 
-            container.Override(typeof(ScalarService), action);
+            container.Override(typeof(ScalarService)).SetCallback(action);
 
             var service = container.Resolve<ScalarService>();
             Assert.AreEqual(123, service.Value);
-        }
-
-        [Test]
-        public void ItCanRegisterCallbacksWithAbstractServicesOrInterfaces()
-        {
-            var simpleImplementation = new SimpleService();
-            var action = new Func<ISimpleInterface>(() => simpleImplementation);
-
-            container.Register<ISimpleInterface>(action);
-
-            var service = container.Resolve<ISimpleInterface>();
-            Assert.AreSame(simpleImplementation, service);
-        }
-
-        [Test]
-        public void ItCanRegisterCallbacksWithAbstractServicesOrInterfacesUsingTheTypeParameter()
-        {
-            var simpleImplementation = new SimpleService();
-            var action = new Func<ISimpleInterface>(() => simpleImplementation);
-
-            container.Register(typeof(ISimpleInterface), action);
-
-            var service = container.Resolve<ISimpleInterface>();
-            Assert.AreSame(simpleImplementation, service);
         }
         
         [Test]
@@ -120,7 +96,7 @@ namespace TheRealIronDuck.Ducktion.Editor.Tests.Editor.Container
                 return service;
             });
 
-            container.Register<ScalarService>(action);
+            container.Register<ScalarService>().SetCallback(action);
 
             var service1 = container.Resolve<ScalarService>();
             Assert.AreEqual(1, calledCount);

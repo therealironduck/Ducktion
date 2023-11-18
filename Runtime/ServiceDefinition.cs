@@ -39,7 +39,7 @@ namespace TheRealIronDuck.Ducktion
         /// Can only be set by the container.
         /// </summary>
         [CanBeNull]
-        public Func<object> Callback { get; internal set; }
+        public Func<object> Callback { get; private set; }
 
         /// <summary>
         /// Specify if the service should be resolved lazily or not. By default, no lazy mode
@@ -140,6 +140,18 @@ namespace TheRealIronDuck.Ducktion
             }
 
             Instance = instance;
+
+            return this;
+        }
+
+        #endregion
+
+        #region CALLBACK CONFIGURATION
+
+        public ServiceDefinition SetCallback(Func<object> callback)
+        {
+            Instance = null;
+            Callback = callback;
 
             return this;
         }

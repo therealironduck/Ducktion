@@ -91,5 +91,29 @@ namespace TheRealIronDuck.Ducktion.Editor.Tests.Editor
             Assert.That(definition.Instance, Is.SameAs(instance));
             Assert.That(definition.LazyMode, Is.EqualTo(LazyMode.Lazy));
         }
+        
+        [Test]
+        public void ItCanSetTheCallback()
+        {
+            var instance = new SimpleService();
+            
+            var definition = container.Register<SimpleService>();
+            definition.SetCallback(() => instance);
+            Assert.That(definition.Callback?.Invoke(), Is.SameAs(instance));
+            
+            definition.SetCallback(null);
+            Assert.That(definition.Callback, Is.Null);
+        }
+        
+        [Test]
+        public void ItCanFluentlySetTheCallback()
+        {
+            var instance = new SimpleService();
+            
+            var definition = container.Register<SimpleService>();
+            definition.SetCallback(() => instance).Lazy();
+            Assert.That(definition.Callback?.Invoke(), Is.SameAs(instance));
+            Assert.That(definition.LazyMode, Is.EqualTo(LazyMode.Lazy));
+        }
     }
 }
