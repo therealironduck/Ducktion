@@ -213,7 +213,7 @@ namespace TheRealIronDuck.Ducktion
 
             foreach (var service in _services)
             {
-                service.Value.Instance = null;
+                service.Value.SetInstance(null);
             }
 
             Reinitialize();
@@ -307,33 +307,6 @@ namespace TheRealIronDuck.Ducktion
         /// <exception cref="DependencyRegisterException">If the registration fails, it will throw an error</exception>
         public ServiceDefinition Register<TKey, TService>([CanBeNull] string id = null) where TService : TKey =>
             Register(typeof(TKey), typeof(TService), id);
-
-        /// <summary>
-        /// Register a new service and its instance. The service type is used as the key and the concrete implementation.
-        /// The instance will be registered as a singleton.
-        /// </summary>
-        /// <param name="type">The type which should be registered</param>
-        /// <param name="instance">The instance which should be returned</param>
-        /// <param name="id">The id of the service</param>
-        /// <exception cref="DependencyRegisterException">If the registration fails, it will throw an error</exception>
-        public ServiceDefinition Register(Type type, object instance, [CanBeNull] string id = null)
-        {
-            var definition = Register(type, instance.GetType(), id);
-            definition.Instance = instance;
-
-            return definition;
-        }
-
-        /// <summary>
-        /// Register a new service and its instance. The service type is used as the key and the concrete implementation.
-        /// The instance will be registered as a singleton.
-        /// </summary>
-        /// <param name="instance">The instance which should be returned</param>
-        /// <param name="id">The id of the service</param>
-        /// <typeparam name="T">The type which should be registered</typeparam>
-        /// <exception cref="DependencyRegisterException">If the registration fails, it will throw an error</exception>
-        public ServiceDefinition Register<T>(T instance, [CanBeNull] string id = null) =>
-            Register(typeof(T), instance, id);
 
         /// <summary>
         /// Register a callback which gets called on resolve. This is useful if you want to resolve
@@ -431,31 +404,36 @@ namespace TheRealIronDuck.Ducktion
             Override(typeof(TKey), typeof(TService), id);
 
         /// <summary>
-        /// Override any registered service with a specific instance. The instance will be registered as a singleton
-        /// and must extend the given type.
+        /// Override any properties on the service registered, like the singleton mode, instance and
+        /// lazy mode.
         /// </summary>
-        /// <param name="type">The type which gets registered</param>
-        /// <param name="instance">The instance which should be returned</param>
+        /// <param name="keyType">The type which gets registered</param>
         /// <param name="id">The id of the service</param>
-        /// <exception cref="DependencyRegisterException">If the registration fails, it will throw an error</exception>
-        public ServiceDefinition Override(Type type, object instance, [CanBeNull] string id = null)
+        /// <exception cref="DependencyRegisterException">If the service doesn't exists, it will throw an error</exception>
+        public ServiceDefinition Override(Type keyType, [CanBeNull] string id = null)
         {
-            var definition = Override(type, instance.GetType(), id);
-            definition.Instance = instance;
+            var key = new Tuple<string, Type>(id, keyType);
+            if (_services.TryGetValue(key, out var definition))
+            {
+                return definition;
+            }
 
-            return definition;
+            _logger.Log(LogLevel.Error, $"Service {keyType} is not registered");
+
+            throw new DependencyRegisterException(
+                keyType,
+                "Service is not registered. Use `register` to register the service"
+            );
         }
 
         /// <summary>
-        /// Override any registered service with a specific instance. The instance will be registered as a singleton
-        /// and must extend the given type.
+        /// Override any properties on the service registered, like the singleton mode, instance and
+        /// lazy mode.
         /// </summary>
-        /// <typeparam name="T">The type which gets registered</typeparam>
-        /// <param name="instance">The instance which should be returned</param>
+        /// <typeparam name="TKey">The type which gets registered</typeparam>
         /// <param name="id">The id of the service</param>
-        /// <exception cref="DependencyRegisterException">If the registration fails, it will throw an error</exception>
-        public ServiceDefinition Override<T>(T instance, [CanBeNull] string id = null) =>
-            Override(typeof(T), instance, id);
+        /// <exception cref="DependencyRegisterException">If the service doesn't exists, it will throw an error</exception>
+        public ServiceDefinition Override<TKey>([CanBeNull] string id = null) => Override(typeof(TKey), id);
 
         /// <summary>
         /// Override a service with a callback which gets called on resolve. This is useful if you
@@ -480,7 +458,7 @@ namespace TheRealIronDuck.Ducktion
                 );
             }
 
-            _services[key].Instance = null;
+            _services[key].SetInstance(null);
             _services[key].Callback = callback;
 
             _logger.Log(LogLevel.Debug, $"Overridden service: {keyType} with callback");
@@ -536,7 +514,7 @@ namespace TheRealIronDuck.Ducktion
         {
             return InnerResolve(type, new[] { type }, id);
         }
-        
+
         /// <summary>
         /// Resolve any [Resolve] attribute usages in the given instance. This will resolve all
         /// properties and fields which have the [Resolve] attribute, as well as all methods which
@@ -552,9 +530,10 @@ namespace TheRealIronDuck.Ducktion
                 {
                     ResolveDependencies(component);
                 }
+
                 return;
             }
-            
+
             var dependencyChain = new[] { instance.GetType() };
 
             const BindingFlags flags = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic;
@@ -685,7 +664,7 @@ namespace TheRealIronDuck.Ducktion
 
             // Finally we instantiate the object with the given parameters
             var instance = Activator.CreateInstance(targetType, parameters.ToArray());
-            
+
             // And resolve all dependencies that occur because of the Resolve attribute
             ResolveDependencies(instance);
 
@@ -722,7 +701,7 @@ namespace TheRealIronDuck.Ducktion
                 ResolveDependencies(go);
             }
         }
-        
+
         #endregion
 
         #region HELPER METHODS
@@ -741,12 +720,12 @@ namespace TheRealIronDuck.Ducktion
 
             if (_services.TryGetValue(key, out var definition))
             {
-                definition.Instance = instance;
+                definition.SetInstance(instance);
                 _services[key] = definition;
                 return;
             }
 
-            _services.Add(key, new ServiceDefinition(type, id) { Instance = instance });
+            _services.Add(key, new ServiceDefinition(type, id).SetInstance(instance));
         }
 
         /// <summary>

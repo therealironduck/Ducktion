@@ -94,5 +94,31 @@ namespace TheRealIronDuck.Ducktion.Editor.Tests.Editor.Container
                 $"Service {typeof(AnotherService)} does not extend {typeof(ISimpleInterface)}"
             ));
         }
+
+        [Test]
+        public void ItCanUseOverrideToOnlySetServiceDefinitionStuff()
+        {
+            var instance = new SimpleService();
+            
+            container.Register<ISimpleInterface, SimpleService>();
+
+            container.Override<ISimpleInterface>().SetInstance(instance);
+            
+            var service = container.Resolve<ISimpleInterface>();
+            Assert.AreSame(instance, service);
+        }
+        
+        [Test]
+        public void ItCanUseOverrideToOnlySetServiceDefinitionStuffUsingATypeParameter()
+        {
+            var instance = new SimpleService();
+            
+            container.Register<ISimpleInterface, SimpleService>();
+
+            container.Override(typeof(ISimpleInterface)).SetInstance(instance);
+            
+            var service = container.Resolve<ISimpleInterface>();
+            Assert.AreSame(instance, service);
+        }
     }
 }

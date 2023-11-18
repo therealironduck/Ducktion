@@ -87,17 +87,6 @@ namespace TheRealIronDuck.Ducktion.Editor.Tests.Editor.Container
                 container.Register<SimpleBaseClass, SimpleService>(),
                 Is.InstanceOf<ServiceDefinition>()
             );
-
-            Assert.That(
-                container.Register<SimpleService>(new SimpleService()),
-                Is.InstanceOf<ServiceDefinition>()
-            );
-
-            Assert.That(
-                container.Register(typeof(SimpleServiceWithDependency),
-                    new SimpleServiceWithDependency(new AnotherService())),
-                Is.InstanceOf<ServiceDefinition>()
-            );
             
             container.Clear();
             
@@ -137,16 +126,6 @@ namespace TheRealIronDuck.Ducktion.Editor.Tests.Editor.Container
             
             Assert.That(
                 container.Override<ISimpleInterface, SimpleService>(),
-                Is.InstanceOf<ServiceDefinition>()
-            );
-            
-            Assert.That(
-                container.Override(typeof(ISimpleInterface), new SimpleService()),
-                Is.InstanceOf<ServiceDefinition>()
-            );
-            
-            Assert.That(
-                container.Override<ISimpleInterface>(new SimpleService()),
                 Is.InstanceOf<ServiceDefinition>()
             );
             

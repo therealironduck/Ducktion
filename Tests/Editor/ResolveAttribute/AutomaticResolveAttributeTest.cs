@@ -106,11 +106,11 @@ namespace TheRealIronDuck.Ducktion.Editor.Tests.Editor.ResolveAttribute
             var another2 = new AnotherService();
             
             // Register registered services
-            container.Register<SimpleService>(simple1);
-            container.Register<SimpleService>(simple2, "simple");
+            container.Register<SimpleService>().SetInstance(simple1);
+            container.Register<SimpleService>("simple").SetInstance(simple2);
             
-            container.Register<AnotherService>(another1);
-            container.Register<AnotherService>(another2, "another");
+            container.Register<AnotherService>().SetInstance(another1);
+            container.Register<AnotherService>("another").SetInstance(another2);
             
             container.Register<ServiceWithIdFieldsAndProperties>();
             
@@ -129,8 +129,8 @@ namespace TheRealIronDuck.Ducktion.Editor.Tests.Editor.ResolveAttribute
             var simple2 = new SimpleService();
             
             // Register registered services
-            container.Register<SimpleService>(simple1);
-            container.Register<SimpleService>(simple2, "simple");
+            container.Register<SimpleService>().SetInstance(simple1);
+            container.Register<SimpleService>("simple").SetInstance(simple2);
             
             container.Register<AnotherService>();
             
@@ -151,8 +151,8 @@ namespace TheRealIronDuck.Ducktion.Editor.Tests.Editor.ResolveAttribute
             var simple2 = new SimpleService();
             
             // Register registered services
-            container.Register<SimpleService>(simple1);
-            container.Register<SimpleService>(simple2, "simple");
+            container.Register<SimpleService>().SetInstance(simple1);
+            container.Register<SimpleService>("simple").SetInstance(simple2);
             
             container.Register<AnotherService>();
             

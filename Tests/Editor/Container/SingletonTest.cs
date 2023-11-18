@@ -86,7 +86,7 @@ namespace TheRealIronDuck.Ducktion.Editor.Tests.Editor.Container
         {
             var error = Assert.Throws<DependencyRegisterException>(() =>
             {
-                container.Register<SimpleService>(new SimpleService()).NonSingleton();
+                container.Register<SimpleService>().SetInstance(new SimpleService()).NonSingleton();
             });
 
             Assert.That(error.Message, Does.Contain("Cannot bind an instance as non singleton"));

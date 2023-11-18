@@ -30,21 +30,23 @@ namespace TheRealIronDuck.Ducktion
         ///
         /// Can only be set by the container.
         /// </summary>
-        [CanBeNull] public object Instance { get; internal set; }
+        [CanBeNull]
+        public object Instance { get; private set; }
 
         /// <summary>
         /// The given callback to resolve the service. Can be null if no callback was given.
         ///
         /// Can only be set by the container.
         /// </summary>
-        [CanBeNull] public Func<object> Callback { get; internal set; }
+        [CanBeNull]
+        public Func<object> Callback { get; internal set; }
 
         /// <summary>
         /// Specify if the service should be resolved lazily or not. By default, no lazy mode
         /// is specified (null), which means that the container will use the default lazy mode.
         /// </summary>
         public LazyMode? LazyMode { get; private set; }
-        
+
         /// <summary>
         /// Specify if the service should be stored as a singleton or not. By default, no singleton
         /// mode is specified (null), which means that the container will use the default singleton mode.
@@ -74,7 +76,7 @@ namespace TheRealIronDuck.Ducktion
             LazyMode = lazyMode;
             return this;
         }
-        
+
         /// <summary>
         /// Mark this service as non lazy.
         /// </summary>
@@ -86,7 +88,7 @@ namespace TheRealIronDuck.Ducktion
         public ServiceDefinition Lazy() => SetLazyMode(Enums.LazyMode.Lazy);
 
         #endregion
-        
+
         #region SINGLETON CONFIGURATION
 
         /// <summary>
@@ -122,17 +124,26 @@ namespace TheRealIronDuck.Ducktion
         /// Mark this service as non singleton. Alias for `NonSingleton`.
         /// </summary>
         public ServiceDefinition Transient() => SetSingletonMode(Enums.SingletonMode.NonSingleton);
-        
+
         #endregion
 
         #region INSTANCE CONFIGURATION
 
-        public void SetInstance(object instance)
+        public ServiceDefinition SetInstance([CanBeNull] object instance)
         {
+            if (!ServiceType.IsInstanceOfType(instance) && instance != null)
+            {
+                throw new DependencyRegisterException(
+                    ServiceType,
+                    $"Service {instance.GetType()} does not extend {ServiceType}"
+                );
+            }
+
             Instance = instance;
+
+            return this;
         }
 
         #endregion
-        
     }
 }

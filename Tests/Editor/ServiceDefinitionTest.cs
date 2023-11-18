@@ -81,6 +81,15 @@ namespace TheRealIronDuck.Ducktion.Editor.Tests.Editor
             Assert.That(definition.Instance, Is.Null);
         }
         
-        // TODO: Fluent setinstance
+        [Test]
+        public void ItCanFluentlySetTheInstance()
+        {
+            var instance = new SimpleService();
+            
+            var definition = container.Register<SimpleService>();
+            definition.SetInstance(instance).Lazy();
+            Assert.That(definition.Instance, Is.SameAs(instance));
+            Assert.That(definition.LazyMode, Is.EqualTo(LazyMode.Lazy));
+        }
     }
 }

@@ -63,7 +63,7 @@ namespace TheRealIronDuck.Ducktion.Editor.Tests.Editor.Container
             var action = new Func<ScalarService>(() => new ScalarService(123));
 
             var existing = new ScalarService(42);
-            container.Register<ScalarService>(existing);
+            container.Register<ScalarService>().SetInstance(existing);
 
             container.Override<ScalarService>(action);
 
