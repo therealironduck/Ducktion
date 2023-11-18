@@ -25,7 +25,7 @@ namespace TheRealIronDuck.Ducktion.Editor.Tests.Editor.Container
         {
             var logger = FakeLogger();
 
-            container.Configure(newDefaultLazyMode: LazyMode.NonLazy);
+            container.Configure(newDefaultLazyMode: LazyMode.NonLazy, newEnableEventBus: false);
 
             container.Register<ServiceWithLogger>();
             container.Register<SecondServiceWithLogger>();
@@ -40,7 +40,7 @@ namespace TheRealIronDuck.Ducktion.Editor.Tests.Editor.Container
         {
             var logger = FakeLogger();
 
-            container.Configure(newDefaultLazyMode: LazyMode.NonLazy);
+            container.Configure(newDefaultLazyMode: LazyMode.NonLazy, newEnableEventBus: false);
 
             container.Register<ServiceWithLogger>().Lazy();
             container.Register<SecondServiceWithLogger>();
@@ -55,7 +55,7 @@ namespace TheRealIronDuck.Ducktion.Editor.Tests.Editor.Container
         {
             var logger = FakeLogger();
 
-            container.Configure(newDefaultLazyMode: LazyMode.NonLazy);
+            container.Configure(newDefaultLazyMode: LazyMode.NonLazy, newEnableEventBus: false);
 
             container.Register<ServiceWithLogger>().SetLazyMode(LazyMode.Lazy);
             container.Register<SecondServiceWithLogger>().SetLazyMode(LazyMode.NonLazy);

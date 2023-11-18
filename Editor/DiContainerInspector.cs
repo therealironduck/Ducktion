@@ -51,6 +51,7 @@ namespace TheRealIronDuck.Ducktion.Editor
         /// <summary>
         /// Render the box which contains the general options.
         /// - DontDestroyOnLoad
+        /// - EnableEventBus
         /// - LogLevel
         /// </summary>
         /// <returns>The general options box</returns>
@@ -58,6 +59,7 @@ namespace TheRealIronDuck.Ducktion.Editor
         {
             var generalOptions = CreateBox("General options");
             generalOptions.Add(new PropertyField(serializedObject.FindProperty("dontDestroyOnLoad")));
+            generalOptions.Add(new PropertyField(serializedObject.FindProperty("enableEventBus")));
             generalOptions.Add(new PropertyField(serializedObject.FindProperty("logLevel")));
             return generalOptions;
         }

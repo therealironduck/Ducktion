@@ -58,6 +58,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Services can be registered in configurators
   - Either by using the `IDiConfigurator` interface and manually registering the configurator
   - Or by using the `MonoDiConfigurator` component and adding it to the containers inspector
+- Add simple event bus implementation
+  - This can be enabled in the Container configuration
+  - You can register event listeners for any events
+  - Events must implement the `IEvent` interface
 - Handle security methods and exceptions
   - When a service is abstract / interface / enum
   - When a service is already registered
