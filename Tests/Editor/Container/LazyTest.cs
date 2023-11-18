@@ -87,27 +87,16 @@ namespace TheRealIronDuck.Ducktion.Editor.Tests.Editor.Container
                 container.Register<SimpleBaseClass, SimpleService>(),
                 Is.InstanceOf<ServiceDefinition>()
             );
-
-            Assert.That(
-                container.Register<SimpleService>(new SimpleService()),
-                Is.InstanceOf<ServiceDefinition>()
-            );
-
-            Assert.That(
-                container.Register(typeof(SimpleServiceWithDependency),
-                    new SimpleServiceWithDependency(new AnotherService())),
-                Is.InstanceOf<ServiceDefinition>()
-            );
             
             container.Clear();
             
             Assert.That(
-                container.Register(typeof(SimpleService), () => new SimpleService()),
+                container.Register(typeof(SimpleService)).SetCallback(() => new SimpleService()),
                 Is.InstanceOf<ServiceDefinition>()
             );
             
             Assert.That(
-                container.Register<ISimpleInterface>(() => new SimpleService()),
+                container.Register<ISimpleInterface, SimpleService>().SetCallback(() => new SimpleService()),
                 Is.InstanceOf<ServiceDefinition>()
             );
         }
@@ -141,22 +130,12 @@ namespace TheRealIronDuck.Ducktion.Editor.Tests.Editor.Container
             );
             
             Assert.That(
-                container.Override(typeof(ISimpleInterface), new SimpleService()),
+                container.Override(typeof(ISimpleInterface)).SetCallback(() => new SimpleService()),
                 Is.InstanceOf<ServiceDefinition>()
             );
             
             Assert.That(
-                container.Override<ISimpleInterface>(new SimpleService()),
-                Is.InstanceOf<ServiceDefinition>()
-            );
-            
-            Assert.That(
-                container.Override(typeof(ISimpleInterface), () => new SimpleService()),
-                Is.InstanceOf<ServiceDefinition>()
-            );
-            
-            Assert.That(
-                container.Override<ISimpleInterface>(() => new SimpleService()),
+                container.Override<ISimpleInterface>().SetCallback(() => new SimpleService()),
                 Is.InstanceOf<ServiceDefinition>()
             );
         }

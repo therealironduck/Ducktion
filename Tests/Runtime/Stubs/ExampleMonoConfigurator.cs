@@ -10,8 +10,8 @@ namespace TheRealIronDuck.Ducktion.Tests.Stubs
         public override void Register(DiContainer container)
         {
             container.Register<ISimpleInterface, SimpleService>();
-            container.Register<ScalarService>(new ScalarService(123));
-            container.Register<AnotherService>(() => new AnotherService());
+            container.Register<ScalarService>().SetInstance(new ScalarService(123));
+            container.Register<AnotherService>().SetCallback(() => new AnotherService());
 
             called = true;
         }

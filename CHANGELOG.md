@@ -13,16 +13,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Added method `Register<TKey, TService>` to register a service with a specific implementation
   - Added method `Register(Type)` to register a simple service
   - Added method `Register(KeyType, ServiceType)` to register a service with a specific implementation
-  - Added method `Register<T>(Instance)` to register a type with a singleton instance
-  - Added method `Register(Type, Instance)` to register a type with a singleton instance
-  - Added method `Register<T>(Callback)` to register a type with a callback
-  - Added method `Register(Type, Callback)` to register a type with a callback
   - Added method `Override<TKey, TService>` to override any service with a specific implementation
   - Added method `Override(KeyType, ServiceType)` to override any service with a specific implementation
-  - Added method `Override<T>(Instance)` to override any service with a specific singleton instance
-  - Added method `Override(Type, Instance)` to override any service with a specific singleton instance
-  - Added method `Override<T>(Callback)` to override any service with a specific callback
-  - Added method `Override(Type, Callback)` to override any service with a specific callback
+  - Added method `Override<TKey>` to override any service configurations, like singleton mode
+  - Added method `Override(KeyType)` to override any service configurations, like singleton mode
   - Added method `Resolve<T>` to resolve a service
   - Added method `Resolve(Type)` to resolve a service
   - Added method `ResolveDependencies(Instance)` to resolve all dependencies with the `[Resolve]`attribute
@@ -45,6 +39,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - `Singleton()` to mark a service as singleton (Alias for `SetSingletonMode(SingletonMode.Singleton)`)
     - `NonSingleton()` to mark a service as non-singleton (Alias for `SetSingletonMode(SingletonMode.NonSingleton)`)
     - `Transient()` as an alias for `NonSingleton()`
+- Services can register the singleton instances directly
+  - Added method to service definition:
+    - `SetInstance(instance)` to specify the singleton instance
+- Service can register a callback resolve function directly
+  - This clears the existing singleton instance as well
+  - Added method to service definition:
+    - `SetCallback(callback)` to specify the resolve function
 - Services can have IDs to be registered multiple times
   - The id can be specified in the registration methods
   - By default every service is registered without an id

@@ -1,4 +1,5 @@
-﻿using NUnit.Framework;
+﻿using System;
+using NUnit.Framework;
 using TheRealIronDuck.Ducktion.Editor.Tests.Editor.Stubs;
 using TheRealIronDuck.Ducktion.Exceptions;
 using UnityEngine;
@@ -12,17 +13,7 @@ namespace TheRealIronDuck.Ducktion.Editor.Tests.Editor.Container
         {
             var service = new SimpleService();
 
-            container.Register<ISimpleInterface>(service);
-
-            Assert.AreSame(service, container.Resolve<ISimpleInterface>());
-        }
-
-        [Test]
-        public void ItCanRegisterSpecificInstancesUsingTypeParameter()
-        {
-            var service = new SimpleService();
-
-            container.Register(typeof(ISimpleInterface), service);
+            container.Register<ISimpleInterface, SimpleService>().SetInstance(service);
 
             Assert.AreSame(service, container.Resolve<ISimpleInterface>());
         }
@@ -33,20 +24,20 @@ namespace TheRealIronDuck.Ducktion.Editor.Tests.Editor.Container
             var service = new AnotherService();
 
             var error = Assert.Throws<DependencyRegisterException>(
-                () => container.Register(typeof(ISimpleInterface), service)
+                () => container.Register(typeof(ISimpleInterface), typeof(SimpleService)).SetInstance(service)
             );
 
             Assert.That(error.Message, Does.Contain(
-                $"Service {typeof(AnotherService)} does not extend {typeof(ISimpleInterface)}"
+                $"Service {typeof(AnotherService)} does not extend {typeof(SimpleService)}"
             ));
         }
-        
+
         [Test]
         public void ItAllowsToRegisterForExampleGameObjectsWhichHaveMultipleConstructors()
         {
             var gObj = new GameObject("Hello World!");
-            container.Register<GameObject>(gObj);
-            
+            container.Register<GameObject>().SetInstance(gObj);
+
             Assert.AreSame(gObj, container.Resolve<GameObject>());
         }
 
@@ -54,14 +45,14 @@ namespace TheRealIronDuck.Ducktion.Editor.Tests.Editor.Container
         public void ItCanOverrideAServiceWithASpecificInstance()
         {
             container.Register<SimpleService>();
-            
+
             var old = container.Resolve<SimpleService>();
-            
+
             var service = new SimpleService();
-            container.Override<SimpleService>(service);
-            
+            container.Override<SimpleService>().SetInstance(service);
+
             var current = container.Resolve<SimpleService>();
-            
+
             Assert.AreSame(service, current);
             Assert.AreNotSame(old, current);
         }
@@ -71,12 +62,13 @@ namespace TheRealIronDuck.Ducktion.Editor.Tests.Editor.Container
         {
             var serviceA = new SimpleService();
             var serviceB = new SimpleService();
-            
-            container.Register<SimpleService>(serviceA);
-            container.Override<SimpleService>(serviceB);
-            
+
+            container.Register<SimpleService>().SetInstance(serviceA);
+
+            container.Override<SimpleService>().SetInstance(serviceB);
+
             var current = container.Resolve<SimpleService>();
-            
+
             Assert.AreSame(serviceB, current);
         }
 
@@ -84,14 +76,15 @@ namespace TheRealIronDuck.Ducktion.Editor.Tests.Editor.Container
         public void ItCanOverrideUsingTypeParameters()
         {
             container.Register<SimpleService>();
-            
+
             var old = container.Resolve<SimpleService>();
-            
+
             var service = new SimpleService();
-            container.Override(typeof(SimpleService), service);
-            
+
+            container.Override(typeof(SimpleService)).SetInstance(service);
+
             var current = container.Resolve<SimpleService>();
-            
+
             Assert.AreSame(service, current);
             Assert.AreNotSame(old, current);
         }
