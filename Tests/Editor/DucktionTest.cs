@@ -33,7 +33,8 @@ namespace TheRealIronDuck.Ducktion.Editor.Tests.Editor
             container.Configure(
                 newLevel: config.LogLevel,
                 newEnableAutoResolve: config.EnableAutoResolve,
-                newAutoResolveSingletonMode: config.AutoResolveSingletonMode
+                newAutoResolveSingletonMode: config.AutoResolveSingletonMode,
+                newEnableEventBus: config.EnableEventBus
             );
 
             return container;

@@ -6,6 +6,7 @@ using JetBrains.Annotations;
 using TheRealIronDuck.Ducktion.Attributes;
 using TheRealIronDuck.Ducktion.Configurators;
 using TheRealIronDuck.Ducktion.Enums;
+using TheRealIronDuck.Ducktion.Events;
 using TheRealIronDuck.Ducktion.Exceptions;
 using TheRealIronDuck.Ducktion.Logging;
 using UnityEngine;
@@ -75,6 +76,12 @@ namespace TheRealIronDuck.Ducktion
         /// </summary>
         [SerializeField] private MonoDiConfigurator[] defaultConfigurators = Array.Empty<MonoDiConfigurator>();
 
+        /// <summary>
+        /// This toggles the event bus implementation. If this is set to false, no event bus or anything related
+        /// will be registered.
+        /// </summary>
+        [SerializeField] private bool enableEventBus = true;
+        
         #endregion
 
         #region VARIABLES
@@ -130,7 +137,7 @@ namespace TheRealIronDuck.Ducktion
             }
 
             _configurators.AddRange(defaultConfigurators);
-
+            
             Reinitialize();
             ResolveAllGameObjects();
         }
@@ -149,7 +156,14 @@ namespace TheRealIronDuck.Ducktion
 
             _logger = Resolve<DucktionLogger>();
             _logger.Configure(logLevel);
-
+            
+            _services.Remove(new Tuple<string, Type>(null, typeof(EventBus)));
+            if (enableEventBus)
+            {
+                _logger.Log(LogLevel.Info, $"Using configurator: {typeof(EventBusConfigurator)}");
+                new EventBusConfigurator().Register(this);
+            }
+            
             _configurators.ForEach(configurator =>
             {
                 _logger.Log(LogLevel.Info, $"Using configurator: {configurator.GetType()}");
@@ -170,12 +184,14 @@ namespace TheRealIronDuck.Ducktion
         /// <param name="newAutoResolveSingletonMode">The singleton mode of auto-resolved services</param>
         /// <param name="newDefaultLazyMode">The default lazy mode</param>
         /// <param name="newDefaultSingletonMode">The default singleton mode</param>
+        /// <param name="newEnableEventBus">Should the event bus be registered?</param>
         public void Configure(
             LogLevel newLevel = LogLevel.Error,
             bool newEnableAutoResolve = true,
             SingletonMode newAutoResolveSingletonMode = SingletonMode.Singleton,
             LazyMode newDefaultLazyMode = LazyMode.Lazy,
-            SingletonMode newDefaultSingletonMode = SingletonMode.Singleton
+            SingletonMode newDefaultSingletonMode = SingletonMode.Singleton,
+            bool newEnableEventBus = true
         )
         {
             logLevel = newLevel;
@@ -183,6 +199,7 @@ namespace TheRealIronDuck.Ducktion
             autoResolveSingletonMode = newAutoResolveSingletonMode;
             defaultLazyMode = newDefaultLazyMode;
             defaultSingletonMode = newDefaultSingletonMode;
+            enableEventBus = newEnableEventBus;
 
             Reinitialize();
         }
@@ -199,7 +216,7 @@ namespace TheRealIronDuck.Ducktion
                 new Tuple<string, Type>(null, typeof(DucktionLogger)),
                 new ServiceDefinition(typeof(DucktionLogger), null)
             );
-
+            
             Reinitialize();
         }
 
