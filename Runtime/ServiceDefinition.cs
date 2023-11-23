@@ -129,6 +129,13 @@ namespace TheRealIronDuck.Ducktion
 
         #region INSTANCE CONFIGURATION
 
+        /// <summary>
+        /// Set the instance of this service. This will override the
+        /// concrete implementation or reset it if null is given.
+        ///
+        /// <param name="instance">The instance which should be stored</param>
+        /// <exception cref="DependencyRegisterException">If the instance doesnt extend the type, an exception will be thrown</exception>
+        /// </summary>
         public ServiceDefinition SetInstance([CanBeNull] object instance)
         {
             if (!ServiceType.IsInstanceOfType(instance) && instance != null)
@@ -148,6 +155,12 @@ namespace TheRealIronDuck.Ducktion
 
         #region CALLBACK CONFIGURATION
 
+        /// <summary>
+        /// Set the callback which will be executed when the service is
+        /// resolved. This will also reset the instance if it was set.
+        ///
+        /// <param name="callback">The callback which should be registered</param>
+        /// </summary>
         public ServiceDefinition SetCallback(Func<object> callback)
         {
             Instance = null;
