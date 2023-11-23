@@ -1,16 +1,8 @@
 {
     "name": "TheRealIronDuck.Ducktion.Tests",
     "rootNamespace": "TheRealIronDuck.Ducktion.Tests",
-    "references": [],
-    "includePlatforms": [
-        "Editor"
-    ],
-    "excludePlatforms": [],
-    "allowUnsafeCode": false,
-    "overrideReferences": false,
-    "precompiledReferences": [],
-    "autoReferenced": true,
-    "defineConstraints": [],
-    "versionDefines": [],
-    "noEngineReferences": false
+    "references": ["GUID:db7d8374cc927a843a7eaca5bc209736","GUID:2211115d6f6af4947978a3377adf01fa"],
+    "optionalUnityReferences": [
+        "TestAssemblies"
+    ]
 }

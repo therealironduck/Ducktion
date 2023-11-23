@@ -14,5 +14,6 @@
     "name": "Jordan Kniest",
     "email": "mail@jkniest.de",
     "url": "https://github.com/jkniest"
-  }
+  },
+  "testables": ["com.therealironduck.ducktion"]
 }
