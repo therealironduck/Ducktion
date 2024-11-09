@@ -4,7 +4,7 @@
 
 A simple, flexible dependency injection solution for Unity!
 
-This package is compatible and tested with Unity 2022.3 LTS.
+This package is compatible and tested with Unity 2022.3 LTS and Unity 6.0 LTS.
 
 ## Features
 
