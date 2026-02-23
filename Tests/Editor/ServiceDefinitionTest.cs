@@ -24,10 +24,10 @@ namespace TheRealIronDuck.Ducktion.Editor.Tests.Editor
             var definition = container.Register<SimpleService>();
             definition.NonLazy();
             Assert.That(definition.LazyMode, Is.EqualTo(Enums.LazyMode.NonLazy));
-            
+
             definition.Lazy();
             Assert.That(definition.LazyMode, Is.EqualTo(Enums.LazyMode.Lazy));
-            
+
             definition.SetLazyMode(LazyMode.NonLazy);
             Assert.That(definition.LazyMode, Is.EqualTo(Enums.LazyMode.NonLazy));
         }
@@ -37,7 +37,7 @@ namespace TheRealIronDuck.Ducktion.Editor.Tests.Editor
         {
             var definition = container.Register<SimpleService>();
             definition.NonLazy().Lazy();
-            
+
             Assert.That(definition.LazyMode, Is.EqualTo(Enums.LazyMode.Lazy));
         }
 
@@ -47,23 +47,23 @@ namespace TheRealIronDuck.Ducktion.Editor.Tests.Editor
             var definition = container.Register<SimpleService>();
             definition.NonSingleton();
             Assert.That(definition.SingletonMode, Is.EqualTo(Enums.SingletonMode.NonSingleton));
-            
+
             definition.Singleton();
             Assert.That(definition.SingletonMode, Is.EqualTo(Enums.SingletonMode.Singleton));
 
             definition.Transient();
             Assert.That(definition.SingletonMode, Is.EqualTo(Enums.SingletonMode.NonSingleton));
-            
+
             definition.SetSingletonMode(SingletonMode.Singleton);
             Assert.That(definition.SingletonMode, Is.EqualTo(Enums.SingletonMode.Singleton));
         }
-        
+
         [Test]
         public void ItCanFluentlyChangeTheSingletonMode()
         {
             var definition = container.Register<SimpleService>();
             definition.Singleton().Lazy();
-            
+
             Assert.That(definition.SingletonMode, Is.EqualTo(Enums.SingletonMode.Singleton));
             Assert.That(definition.LazyMode, Is.EqualTo(Enums.LazyMode.Lazy));
         }
@@ -72,48 +72,76 @@ namespace TheRealIronDuck.Ducktion.Editor.Tests.Editor
         public void ItCanSetTheInstance()
         {
             var instance = new SimpleService();
-            
+
             var definition = container.Register<SimpleService>();
             definition.SetInstance(instance);
             Assert.That(definition.Instance, Is.SameAs(instance));
-            
+
             definition.SetInstance(null);
             Assert.That(definition.Instance, Is.Null);
         }
-        
+
         [Test]
         public void ItCanFluentlySetTheInstance()
         {
             var instance = new SimpleService();
-            
+
             var definition = container.Register<SimpleService>();
             definition.SetInstance(instance).Lazy();
             Assert.That(definition.Instance, Is.SameAs(instance));
             Assert.That(definition.LazyMode, Is.EqualTo(LazyMode.Lazy));
         }
-        
+
         [Test]
         public void ItCanSetTheCallback()
         {
             var instance = new SimpleService();
-            
+
             var definition = container.Register<SimpleService>();
             definition.SetCallback(() => instance);
             Assert.That(definition.Callback?.Invoke(), Is.SameAs(instance));
-            
+
             definition.SetCallback(null);
             Assert.That(definition.Callback, Is.Null);
         }
-        
+
         [Test]
         public void ItCanFluentlySetTheCallback()
         {
             var instance = new SimpleService();
-            
+
             var definition = container.Register<SimpleService>();
             definition.SetCallback(() => instance).Lazy();
             Assert.That(definition.Callback?.Invoke(), Is.SameAs(instance));
             Assert.That(definition.LazyMode, Is.EqualTo(LazyMode.Lazy));
+        }
+
+        [Test]
+        public void ItCanAddParameters()
+        {
+            var definition = container.Register<ScalarService>();
+            definition.SetParameter("value", 24);
+            Assert.IsTrue(definition.Parameters.ContainsKey("value"));
+            Assert.That(definition.Parameters["value"], Is.EqualTo(24));
+
+            definition.RemoveParameter("value");
+            Assert.IsFalse(definition.Parameters.ContainsKey("value"));
+        }
+
+        [Test]
+        public void ItCanFluentlySetParameters()
+        {
+            var definition = container.Register<ScalarService>();
+            definition.SetParameter("value", 24).Lazy();
+
+            Assert.IsTrue(definition.Parameters.ContainsKey("value"));
+            Assert.That(definition.LazyMode, Is.EqualTo(LazyMode.Lazy));
+
+            definition.RemoveParameter("value").NonLazy();
+
+            Assert.IsFalse(definition.Parameters.ContainsKey("value"));
+            Assert.That(definition.LazyMode, Is.EqualTo(LazyMode.NonLazy));
+
         }
     }
 }

@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using JetBrains.Annotations;
 using TheRealIronDuck.Ducktion.Enums;
 using TheRealIronDuck.Ducktion.Exceptions;
@@ -52,6 +53,8 @@ namespace TheRealIronDuck.Ducktion
         /// mode is specified (null), which means that the container will use the default singleton mode.
         /// </summary>
         public SingletonMode? SingletonMode { get; private set; }
+
+        public Dictionary<string, object> Parameters { get; } = new();
 
         #endregion
 
@@ -165,6 +168,39 @@ namespace TheRealIronDuck.Ducktion
         {
             Instance = null;
             Callback = callback;
+
+            return this;
+        }
+
+        #endregion
+
+        #region PARAMETER CONFIGURATION
+
+        /// <summary>
+        /// Set parameters which will be given to the constructor when service
+        /// is resolved. This will also reset the instance if it was set.
+        ///
+        /// <param name="name">Name of the parameter you want to set</param>
+        /// <param name="value">Value of the parameter</param>
+        /// </summary>
+        public ServiceDefinition SetParameter(string name, object value)
+        {
+            Instance = null;
+            Parameters.Add(name, value);
+
+            return this;
+        }
+
+        /// <summary>
+        /// Remove pre-set parameter when service is resolved. This will also reset
+        /// the instance if it was set.
+        ///
+        /// <param name="name">Name of the parameter you want to remove</param>
+        /// </summary>
+        public ServiceDefinition RemoveParameter(string name)
+        {
+            Instance = null;
+            Parameters.Remove(name);
 
             return this;
         }
