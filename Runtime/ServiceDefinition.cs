@@ -54,7 +54,17 @@ namespace TheRealIronDuck.Ducktion
         /// </summary>
         public SingletonMode? SingletonMode { get; private set; }
 
+        /// <summary>
+        /// Specify parameters before resolving to be set. This will override auto resolving and other
+        /// registered services and allows to specify parameters.
+        /// </summary>
         public Dictionary<string, object> Parameters { get; } = new();
+
+        /// <summary>
+        /// Any service can have multiple tags. These can be used with the `ResolveTags` attribute to
+        /// fetch all services with a given tag.
+        /// </summary>
+        public List<string> Tags { get; } = new();
 
         #endregion
 
@@ -201,6 +211,49 @@ namespace TheRealIronDuck.Ducktion
         {
             Instance = null;
             Parameters.Remove(name);
+
+            return this;
+        }
+
+        #endregion
+
+        #region TAG CONFIGURATION
+
+        /// <summary>
+        /// Add a new tag to the service. See `ResolveTags` to see how it can be used.
+        /// </summary>
+        /// <param name="tag">The tag that should be added</param>
+        public ServiceDefinition WithTag(string tag)
+        {
+            Tags.Add(tag);
+
+            return this;
+        }
+
+        /// <summary>
+        /// Alias for `WithTag`
+        /// </summary>
+        /// <param name="tag">The tag that should be added</param>
+        public ServiceDefinition AddTag(string tag) => WithTag(tag);
+
+        /// <summary>
+        /// Add multiple tags to the service.
+        /// </summary>
+        /// <param name="tags">The tags that should be added</param>
+        public ServiceDefinition WithTags(params string[] tags)
+        {
+            Tags.AddRange(tags);
+
+            return this;
+        }
+
+        /// <summary>
+        /// Remove a specific tag from the service.
+        /// </summary>
+        /// <param name="tag">The tag that should be removed</param>
+        public ServiceDefinition RemoveTag(string tag)
+        {
+            Tags.Remove(tag);
 
             return this;
         }

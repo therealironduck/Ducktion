@@ -1,3 +1,5 @@
+using TheRealIronDuck.Ducktion.Attributes;
+
 namespace TheRealIronDuck.Ducktion.Editor.Tests.Editor.Stubs.AttributeTest
 {
     public class ServiceWithIdMethodParameters
@@ -5,9 +7,9 @@ namespace TheRealIronDuck.Ducktion.Editor.Tests.Editor.Stubs.AttributeTest
         public SimpleService Simple;
         public AnotherService Another;
 
-        [Attributes.Resolve]
+        [Resolve]
         public void Resolve(
-            [Attributes.Resolve(id: "simple")] SimpleService simple,
+            [Resolve(id: "simple")] SimpleService simple,
             AnotherService another
         )
         {

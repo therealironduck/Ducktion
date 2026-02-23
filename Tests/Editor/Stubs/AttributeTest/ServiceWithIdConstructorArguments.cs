@@ -1,3 +1,5 @@
+using TheRealIronDuck.Ducktion.Attributes;
+
 namespace TheRealIronDuck.Ducktion.Editor.Tests.Editor.Stubs.AttributeTest
 {
     public class ServiceWithIdConstructorArguments
@@ -6,7 +8,7 @@ namespace TheRealIronDuck.Ducktion.Editor.Tests.Editor.Stubs.AttributeTest
         public readonly AnotherService Another;
 
         public ServiceWithIdConstructorArguments(
-            [Attributes.Resolve(id: "simple")] SimpleService simple,
+            [Resolve(id: "simple")] SimpleService simple,
             AnotherService another
         )
         {

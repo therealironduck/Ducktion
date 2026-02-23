@@ -2,13 +2,13 @@ using TheRealIronDuck.Ducktion.Attributes;
 
 namespace TheRealIronDuck.Ducktion.Editor.Tests.Editor.Stubs.AttributeTest
 {
-    public class ServiceWithPublicAttribute
+    public class ServiceWithPublicTagged
     {
-        [Resolve] public readonly SimpleService Simple;
+        [ResolveTags("example")] public readonly TaggedServices Services;
 
         public readonly AnotherService Another;
-        
-        public ServiceWithPublicAttribute(AnotherService another)
+
+        public ServiceWithPublicTagged(AnotherService another)
         {
             Another = another;
         }

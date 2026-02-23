@@ -2,8 +2,8 @@ using TheRealIronDuck.Ducktion.Attributes;
 
 namespace TheRealIronDuck.Ducktion.Editor.Tests.Editor.Stubs.AttributeTest
 {
-    public class ServiceWithProperty
+    public class ServiceWithPropertyTagged
     {
-        [Resolve] public SimpleService Simple { get; private set; }
+        [ResolveTags("example")] public TaggedServices Simple { get; private set; }
     }
 }

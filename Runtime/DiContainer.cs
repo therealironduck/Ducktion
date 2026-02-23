@@ -453,9 +453,10 @@ namespace TheRealIronDuck.Ducktion
         }
 
         /// <summary>
-        /// Resolve any [Resolve] attribute usages in the given instance. This will resolve all
+        /// Resolve any [Resolve] and [ResolveTags] attribute usages in the given instance. This will resolve all
         /// properties and fields which have the [Resolve] attribute, as well as all methods which
-        /// contain the [Resolve] attribute.
+        /// contain the [Resolve] attribute. In addition it will set all TaggedServices instances based on the
+        /// the [ResolveTags] attribute.
         /// </summary>
         /// <param name="instance">The instance which should have its dependencies resolved</param>
         public void ResolveDependencies(object instance)
@@ -481,13 +482,51 @@ namespace TheRealIronDuck.Ducktion
 
             foreach (var field in allFields)
             {
-                var attribute = field.GetCustomAttribute<ResolveAttribute>();
+                var resolveAttribute = field.GetCustomAttribute<ResolveAttribute>();
+                if (resolveAttribute != null)
+                {
+                    HandleResolveAttribute(field, instance, dependencyChain, resolveAttribute);
+                }
+
+                var resolveTagsAttribute = field.GetCustomAttribute<ResolveTagsAttribute>();
+                if (resolveTagsAttribute != null)
+                {
+                    HandleResolveTagsAttribute(field, instance, resolveTagsAttribute);
+                }
+            }
+
+            var methods = instance.GetType().GetMethods(flags);
+
+            foreach (var method in methods)
+            {
+                var attribute = method.GetCustomAttribute<ResolveAttribute>();
                 if (attribute == null)
                 {
                     continue;
                 }
 
-                switch (field)
+                var methodParameters = ResolveParametersForMethod(
+                    instance.GetType(),
+                    dependencyChain,
+                    method,
+                    new Dictionary<string, object>()
+                );
+
+                method.Invoke(instance, methodParameters.ToArray());
+            }
+        }
+
+        /// <summary>
+        /// It automatically resolves any parameter which has a Resolve attribute. It handles both fields
+        /// and properties.
+        /// </summary>
+        /// <param name="field">The field which contains the attribute</param>
+        /// <param name="instance">The instance we are currently resolving</param>
+        /// <param name="dependencyChain">The dependency chain to prevent infinite recursion</param>
+        /// <param name="attribute">The `Resolve` attribute</param>
+        private void HandleResolveAttribute(MemberInfo field, object instance, Type[] dependencyChain, ResolveAttribute attribute)
+        {
+             switch (field)
                 {
                     case FieldInfo f1:
                         f1.SetValue(
@@ -511,26 +550,32 @@ namespace TheRealIronDuck.Ducktion
                         );
                         break;
                 }
-            }
+        }
 
-            var methods = instance.GetType().GetMethods(flags);
-
-            foreach (var method in methods)
+        /// <summary>
+        /// It automatically resolves any parameter which has a ResolveTags attribute. It handles both fields
+        /// and properties.
+        /// </summary>
+        /// <param name="field">The field which contains the attribute</param>
+        /// <param name="instance">The instance we are currently resolving</param>
+        /// <param name="attribute">The `ResolveTags` attribute</param>
+        private void HandleResolveTagsAttribute(MemberInfo field, object instance, ResolveTagsAttribute attribute)
+        {
+            switch (field)
             {
-                var attribute = method.GetCustomAttribute<ResolveAttribute>();
-                if (attribute == null)
-                {
-                    continue;
-                }
+                case FieldInfo f1:
+                    f1.SetValue(
+                        instance,
+                        GetTagged(attribute.Tag)
+                    );
+                    break;
 
-                var methodParameters = ResolveParametersForMethod(
-                    instance.GetType(),
-                    dependencyChain,
-                    method,
-                    new Dictionary<string, object>()
-                );
-
-                method.Invoke(instance, methodParameters.ToArray());
+                case PropertyInfo p1:
+                    p1.SetValue(
+                        instance,
+                        GetTagged(attribute.Tag)
+                    );
+                    break;
             }
         }
 
@@ -656,6 +701,20 @@ namespace TheRealIronDuck.Ducktion
             }
         }
 
+        /// <summary>
+        /// Return a full TaggedService instance which contains all service definitions based on the
+        /// services that currently have the given tag.
+        /// </summary>
+        /// <param name="targetTag">The tag which should be resolved</param>
+        /// <returns></returns>
+        public TaggedServices GetTagged(string targetTag)
+        {
+            return new TaggedServices(
+                this,
+                _services.Values.Where(service => service.Tags.Contains(targetTag)).ToList()
+            );
+        }
+
         #endregion
 
         #region HELPER METHODS
@@ -745,6 +804,15 @@ namespace TheRealIronDuck.Ducktion
 
             foreach (var parameter in method.GetParameters())
             {
+                // If the given parameter has a `ResolveTags` attribute, set the TaggedServices field and skip
+                // all of the other resolving.
+                var resolveTags = parameter.GetCustomAttribute<ResolveTagsAttribute>();
+                if (resolveTags != null)
+                {
+                    parameters.Add(GetTagged(resolveTags.Tag));
+                    continue;
+                }
+
                 // If the given parameter is already set, we just set it and continue -> skipping the stuff later on
                 if (preSetParameters.ContainsKey(parameter.Name))
                 {
