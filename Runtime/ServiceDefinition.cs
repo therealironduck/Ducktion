@@ -218,6 +218,22 @@ namespace TheRealIronDuck.Ducktion
             return this;
         }
 
+        public ServiceDefinition AddTag(string tag) => WithTag(tag);
+
+        public ServiceDefinition WithTags(params string[] tags)
+        {
+            Tags.AddRange(tags);
+
+            return this;
+        }
+
+        public ServiceDefinition RemoveTag(string tag)
+        {
+            Tags.Remove(tag);
+
+            return this;
+        }
+
         #endregion
     }
 }

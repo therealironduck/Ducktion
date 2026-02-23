@@ -143,5 +143,31 @@ namespace TheRealIronDuck.Ducktion.Editor.Tests.Editor
             Assert.That(definition.LazyMode, Is.EqualTo(LazyMode.NonLazy));
 
         }
+
+        [Test]
+        public void ItCanAddTags()
+        {
+            var definition = container.Register<SimpleService>();
+            definition.AddTag("tag");
+            Assert.IsTrue(definition.Tags.Contains("tag"));
+
+            definition.RemoveTag("tag");
+            Assert.IsFalse(definition.Tags.Contains("tag"));
+        }
+
+        [Test]
+        public void ItCanFluentlyAddTags()
+        {
+            var definition = container.Register<SimpleService>();
+            definition.AddTag("tag").Lazy();
+
+            Assert.IsTrue(definition.Tags.Contains("tag"));
+            Assert.That(definition.LazyMode, Is.EqualTo(LazyMode.Lazy));
+
+            definition.RemoveTag("tag").NonLazy();
+
+            Assert.IsFalse(definition.Tags.Contains("tag"));
+            Assert.That(definition.LazyMode, Is.EqualTo(LazyMode.NonLazy));
+        }
     }
 }

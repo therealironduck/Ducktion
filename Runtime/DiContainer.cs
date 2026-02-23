@@ -547,7 +547,6 @@ namespace TheRealIronDuck.Ducktion
         {
             switch (field)
             {
-                // TODO: Validate that is is TaggedServices
                 case FieldInfo f1:
                     f1.SetValue(
                         instance,
@@ -783,7 +782,6 @@ namespace TheRealIronDuck.Ducktion
 
             foreach (var parameter in method.GetParameters())
             {
-                // TODO: Validate parameter type matches attribute
                 var resolveTags = parameter.GetCustomAttribute<ResolveTagsAttribute>();
                 if (resolveTags != null)
                 {
@@ -802,10 +800,6 @@ namespace TheRealIronDuck.Ducktion
                     parameters.Add(preSetParameters[parameter.Name]);
                     continue;
                 }
-
-                // TODO:
-                // Draw graph: Instance -> Callback -> Resolve
-                // Graph 2 [Resolve]: Tagged > Pre-Set Parameters > Resolve (optional ID)
 
                 // If the given parameter was already resolved in the current chain, we will throw an error
                 // This is to prevent circular dependencies

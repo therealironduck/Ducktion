@@ -59,10 +59,8 @@ namespace TheRealIronDuck.Ducktion.Editor.Tests.Editor.Attributes.ResolveTags
 
             container.Register<ServiceWithTagConstructorArguments>();
 
-            // Resolve the main service
             var service = container.Resolve<ServiceWithTagConstructorArguments>();
 
-            // Ensure that both the resolve attribute and the constructor parameter are resolved
             Assert.NotNull(service.Simple);
             Assert.AreEqual(2, service.Simple.Count);
         }
@@ -77,7 +75,6 @@ namespace TheRealIronDuck.Ducktion.Editor.Tests.Editor.Attributes.ResolveTags
 
             var service = container.Resolve<ServiceWithTagMethodParameters>();
 
-            // Ensure that both the resolve attribute and the constructor parameter are resolved
             Assert.NotNull(service.Simple);
             Assert.AreEqual(2, service.Simple.Count);
         }

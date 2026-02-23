@@ -75,11 +75,34 @@ namespace TheRealIronDuck.Ducktion.Editor.Tests.Editor.Container
             Assert.IsFalse(enumerator.MoveNext());
         }
 
-        // TODO
-        // - [ResolveByTag]
-        // - FilterByType<T>
-        // - Multiple tags
-        // - Remove tags
-        // - Tag caching ?!
+        [Test]
+        public void ItCanHaveMultipleTags()
+        {
+            container.Register<SimpleService>().WithTag("example").AddTag("another_tag");
+            container.Register<AnotherService>().WithTags("example", "third_tag");
+            container.Register<ServiceWithLogger>().AddTag("another_tag");
+
+            var taggedExample = container.GetTagged("example");
+            Assert.AreEqual(2, taggedExample.Count);
+
+            var taggedAnother = container.GetTagged("another_tag");
+            Assert.AreEqual(2, taggedAnother.Count);
+
+            var taggedThird = container.GetTagged("third_tag");
+            Assert.AreEqual(1, taggedThird.Count);
+        }
+
+        [Test]
+        public void ItCanRemoveSpecificTags()
+        {
+            container.Register<SimpleService>().WithTag("example").AddTag("another_tag");
+            container.Override<SimpleService>().RemoveTag("another_tag");
+
+            var taggedExample = container.GetTagged("example");
+            Assert.AreEqual(1, taggedExample.Count);
+
+            var taggedAnother = container.GetTagged("another_tag");
+            Assert.AreEqual(0, taggedAnother.Count);
+        }
     }
 }
