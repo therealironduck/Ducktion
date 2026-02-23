@@ -526,7 +526,8 @@ namespace TheRealIronDuck.Ducktion
                 var methodParameters = ResolveParametersForMethod(
                     instance.GetType(),
                     dependencyChain,
-                    method
+                    method,
+                    new Dictionary<string, object>()
                 );
 
                 method.Invoke(instance, methodParameters.ToArray());
@@ -608,7 +609,12 @@ namespace TheRealIronDuck.Ducktion
             }
 
             // Resolve all parameters for the given constructor
-            var parameters = ResolveParametersForMethod(type, dependencyChain, constructors.FirstOrDefault());
+            var parameters = ResolveParametersForMethod(
+                type,
+                dependencyChain,
+                constructors.FirstOrDefault(),
+                service?.Parameters ??  new Dictionary<string, object>()
+            );
 
             // Finally we instantiate the object with the given parameters
             var instance = Activator.CreateInstance(targetType, parameters.ToArray());
@@ -643,7 +649,7 @@ namespace TheRealIronDuck.Ducktion
         /// </summary>
         private void ResolveAllGameObjects()
         {
-            var allObjects = FindObjectsOfType<GameObject>();
+            var allObjects = FindObjectsByType<GameObject>(FindObjectsSortMode.None);
             foreach (var go in allObjects)
             {
                 ResolveDependencies(go);
@@ -718,23 +724,39 @@ namespace TheRealIronDuck.Ducktion
         }
 
         /// <summary>
-        /// This method takes a method and resolves all required parameters for the given method.
+        /// This method takes a method and resolves all required parameters for the given method. For the top level
+        /// a dictionary with already defined parameters can be given which will be prioritized before resolving
+        /// through the container.
         /// </summary>
         /// <param name="type">The type which gets resolved</param>
         /// <param name="dependencyChain">The current dependency chain</param>
         /// <param name="method">The method which parameters should be resolved</param>
+        /// <param name="preSetParameters">Already defined parameters for the top-level</param>
         /// <returns>A list of all resolved parameters</returns>
         /// <exception cref="DependencyResolveException">If something couldn't be resolved, an exception is thrown</exception>
         private List<object> ResolveParametersForMethod(
             Type type,
             Type[] dependencyChain,
-            MethodBase method
+            MethodBase method,
+            Dictionary<string, object> preSetParameters
         )
         {
             var parameters = new List<object>();
 
             foreach (var parameter in method.GetParameters())
             {
+                // If the given parameter is already set, we just set it and continue -> skipping the stuff later on
+                if (preSetParameters.ContainsKey(parameter.Name))
+                {
+                    if (!parameter.ParameterType.IsInstanceOfType(preSetParameters[parameter.Name]))
+                    {
+                        throw new DependencyResolveException(type, $"Pre-set parameter `{parameter.Name}` is not compatible with type `{parameter.ParameterType}`");
+                    }
+
+                    parameters.Add(preSetParameters[parameter.Name]);
+                    continue;
+                }
+
                 // If the given parameter was already resolved in the current chain, we will throw an error
                 // This is to prevent circular dependencies
                 if (dependencyChain.Contains(parameter.ParameterType))
