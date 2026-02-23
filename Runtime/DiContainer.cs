@@ -584,6 +584,17 @@ namespace TheRealIronDuck.Ducktion
             // If the service isn't registered we just take the original type given. Otherwise we take the
             // registered type.
             var targetType = service?.ServiceType ?? type;
+
+            // If we try to dynamically create a scriptable object, throw an error. ScriptableObjects
+            // should NEVER be automatically resolved. They either should be manually registered OR
+            // resolved through an instance / callback.
+            if (typeof(ScriptableObject).IsAssignableFrom(targetType))
+            {
+                _logger?.Log(LogLevel.Error, $"Service {targetType} cant be resolved: Cannot auto resolve scriptable objects");
+
+                throw new DependencyResolveException(targetType, "Cannot auto resolve scriptable object.");
+            }
+
             var isAutoResolved = service == null;
 
             // Get all constructors. If there are more than one, we will throw an error

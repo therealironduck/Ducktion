@@ -1,6 +1,7 @@
 ﻿using NUnit.Framework;
 using TheRealIronDuck.Ducktion.Editor.Tests.Editor.Stubs;
 using TheRealIronDuck.Ducktion.Enums;
+using TheRealIronDuck.Ducktion.Exceptions;
 
 namespace TheRealIronDuck.Ducktion.Editor.Tests.Editor.Container
 {
@@ -18,49 +19,65 @@ namespace TheRealIronDuck.Ducktion.Editor.Tests.Editor.Container
             Assert.NotNull(result);
             Assert.IsInstanceOf<SimpleService>(result);
         }
-        
+
         [Test]
         public void ItCanAutomaticallyResolveUnknownServicesRecursively()
         {
             var result = container.Resolve<SimpleServiceWithDependency>();
             Assert.NotNull(result);
             Assert.IsInstanceOf<SimpleServiceWithDependency>(result);
-            
+
             Assert.IsInstanceOf<AnotherService>(result.Another);
         }
-        
+
         [Test]
         public void ItCanMixAutomaticResolvesWithManuallyRegisteredInterfaces()
         {
             container.Register<ISimpleInterface, SimpleServiceWithDependency>();
-            
+
             var result = container.Resolve<ServiceWithDependencies>();
             Assert.NotNull(result);
             Assert.IsInstanceOf<ServiceWithDependencies>(result);
-            
+
             Assert.IsInstanceOf<SimpleServiceWithDependency>(result.Simple);
-            
+
             Assert.IsInstanceOf<AnotherService>((result.Simple as SimpleServiceWithDependency)?.Another);
         }
-        
+
         [Test]
         public void ItStoresThemAsSingletons()
         {
             var result1 = container.Resolve<SimpleService>();
             var result2 = container.Resolve<SimpleService>();
-            
+
             Assert.AreSame(result1, result2);
         }
-        
+
         [Test]
         public void ItCanOptionallyNotStoreThemAsSingletons()
         {
             container.Configure(newAutoResolveSingletonMode: SingletonMode.NonSingleton);
-            
+
             var result1 = container.Resolve<SimpleService>();
             var result2 = container.Resolve<SimpleService>();
-            
+
             Assert.AreNotSame(result1, result2);
+        }
+
+        [Test]
+        public void ItThrowsAnExceptionIfAScriptableObjectIsBeingResolvedWithoutBeingRegistered()
+        {
+            var failed = false;
+            try
+            {
+                container.Resolve<ServiceWithScriptableObject>();
+            }
+            catch (DependencyResolveException)
+            {
+                failed = true;
+            }
+
+            Assert.IsTrue(failed, "Resolving has not failed!");
         }
     }
 }
