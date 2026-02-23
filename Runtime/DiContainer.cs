@@ -453,9 +453,10 @@ namespace TheRealIronDuck.Ducktion
         }
 
         /// <summary>
-        /// Resolve any [Resolve] attribute usages in the given instance. This will resolve all
+        /// Resolve any [Resolve] and [ResolveTags] attribute usages in the given instance. This will resolve all
         /// properties and fields which have the [Resolve] attribute, as well as all methods which
-        /// contain the [Resolve] attribute.
+        /// contain the [Resolve] attribute. In addition it will set all TaggedServices instances based on the
+        /// the [ResolveTags] attribute.
         /// </summary>
         /// <param name="instance">The instance which should have its dependencies resolved</param>
         public void ResolveDependencies(object instance)
@@ -515,6 +516,14 @@ namespace TheRealIronDuck.Ducktion
             }
         }
 
+        /// <summary>
+        /// It automatically resolves any parameter which has a Resolve attribute. It handles both fields
+        /// and properties.
+        /// </summary>
+        /// <param name="field">The field which contains the attribute</param>
+        /// <param name="instance">The instance we are currently resolving</param>
+        /// <param name="dependencyChain">The dependency chain to prevent infinite recursion</param>
+        /// <param name="attribute">The `Resolve` attribute</param>
         private void HandleResolveAttribute(MemberInfo field, object instance, Type[] dependencyChain, ResolveAttribute attribute)
         {
              switch (field)
@@ -543,6 +552,13 @@ namespace TheRealIronDuck.Ducktion
                 }
         }
 
+        /// <summary>
+        /// It automatically resolves any parameter which has a ResolveTags attribute. It handles both fields
+        /// and properties.
+        /// </summary>
+        /// <param name="field">The field which contains the attribute</param>
+        /// <param name="instance">The instance we are currently resolving</param>
+        /// <param name="attribute">The `ResolveTags` attribute</param>
         private void HandleResolveTagsAttribute(MemberInfo field, object instance, ResolveTagsAttribute attribute)
         {
             switch (field)
@@ -685,6 +701,12 @@ namespace TheRealIronDuck.Ducktion
             }
         }
 
+        /// <summary>
+        /// Return a full TaggedService instance which contains all service definitions based on the
+        /// services that currently have the given tag.
+        /// </summary>
+        /// <param name="targetTag">The tag which should be resolved</param>
+        /// <returns></returns>
         public TaggedServices GetTagged(string targetTag)
         {
             return new TaggedServices(
@@ -782,6 +804,8 @@ namespace TheRealIronDuck.Ducktion
 
             foreach (var parameter in method.GetParameters())
             {
+                // If the given parameter has a `ResolveTags` attribute, set the TaggedServices field and skip
+                // all of the other resolving.
                 var resolveTags = parameter.GetCustomAttribute<ResolveTagsAttribute>();
                 if (resolveTags != null)
                 {
