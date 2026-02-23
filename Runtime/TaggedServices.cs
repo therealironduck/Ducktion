@@ -13,7 +13,7 @@ namespace TheRealIronDuck.Ducktion
     public class TaggedServices : IReadOnlyCollection<ServiceDefinition>
     {
         /// <summary>
-        /// All service definitons which match the tag
+        /// All service definitions which match the tag
         /// </summary>
         readonly private List<ServiceDefinition> _services;
 
@@ -55,8 +55,8 @@ namespace TheRealIronDuck.Ducktion
         /// Allows to iterate through all resolved services. They will only be resolved when
         /// being accessed.
         /// </summary>
-        /// <returns>Enumerator which contains all resolved services</returns>
-        public IEnumerator GetServices()
+        /// <returns>Enumerable which contains all resolved services</returns>
+        public IEnumerable GetServices()
         {
             foreach (var definition in _services)
             {
@@ -72,8 +72,8 @@ namespace TheRealIronDuck.Ducktion
         /// Each service that doesn't extend / is assignable from the given type will be ignored.
         /// </summary>
         /// <typeparam name="T">The basetype which should be filtered</typeparam>
-        /// <returns>A filtered enumerator for the resolved services that match the type</returns>
-        public IEnumerator<T> GetServices<T>()
+        /// <returns>A filtered enumerable for the resolved services that match the type</returns>
+        public IEnumerable<T> GetServices<T>()
         {
             foreach (var definition in _services)
             {

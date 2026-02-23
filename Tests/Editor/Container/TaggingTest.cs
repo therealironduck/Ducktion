@@ -39,7 +39,7 @@ namespace TheRealIronDuck.Ducktion.Editor.Tests.Editor.Container
             var tagged = container.GetTagged("example");
             Assert.AreEqual(2, tagged.Count);
 
-            var enumerator = tagged.GetServices();
+            var enumerator = tagged.GetServices().GetEnumerator();
             Assert.IsTrue(enumerator.MoveNext());
 
             var service1 = enumerator.Current;
@@ -62,7 +62,7 @@ namespace TheRealIronDuck.Ducktion.Editor.Tests.Editor.Container
             var tagged = container.GetTagged("example");
             Assert.AreEqual(3, tagged.Count);
 
-            var enumerator = tagged.GetServices<SimpleService>();
+            var enumerator = tagged.GetServices<SimpleService>().GetEnumerator();
             Assert.IsTrue(enumerator.MoveNext());
 
             var service1 = enumerator.Current;
