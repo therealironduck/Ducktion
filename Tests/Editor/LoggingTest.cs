@@ -261,5 +261,26 @@ namespace TheRealIronDuck.Ducktion.Editor.Tests.Editor
                 $"Using configurator: {typeof(ExampleConfigurator)}"
             );
         }
+
+        [Test]
+        public void ItLogsAnErrorIfAScriptableObjectIsBeingResolvedWithoutBeingRegistered()
+        {
+            var logger = FakeLogger();
+            container.Configure(newEnableAutoResolve: true);
+
+            try
+            {
+                container.Resolve<ServiceWithScriptableObject>();
+            }
+            catch (Exception)
+            {
+                // ignored
+            }
+
+            logger.AssertHasMessage(
+                LogLevel.Error,
+                $"Service {typeof(SimpleScriptableObject)} cant be resolved: Cannot auto resolve scriptable objects"
+            );
+        }
     }
 }

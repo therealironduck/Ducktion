@@ -1,4 +1,3 @@
-using System;
 using NUnit.Framework;
 using TheRealIronDuck.Ducktion.Editor.Tests.Editor.Stubs;
 using TheRealIronDuck.Ducktion.Exceptions;
