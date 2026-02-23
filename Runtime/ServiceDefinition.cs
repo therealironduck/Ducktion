@@ -56,6 +56,8 @@ namespace TheRealIronDuck.Ducktion
 
         public Dictionary<string, object> Parameters { get; } = new();
 
+        public List<string> Tags { get; } = new();
+
         #endregion
 
         #region LIFECYCLE METHODS
@@ -201,6 +203,17 @@ namespace TheRealIronDuck.Ducktion
         {
             Instance = null;
             Parameters.Remove(name);
+
+            return this;
+        }
+
+        #endregion
+
+        #region TAG CONFIGURATION
+
+        public ServiceDefinition WithTag(string tag)
+        {
+            Tags.Add(tag);
 
             return this;
         }

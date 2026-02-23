@@ -3,7 +3,7 @@ using TheRealIronDuck.Ducktion.Editor.Tests.Editor.Stubs;
 using TheRealIronDuck.Ducktion.Editor.Tests.Editor.Stubs.AttributeTest;
 using TheRealIronDuck.Ducktion.Logging;
 
-namespace TheRealIronDuck.Ducktion.Editor.Tests.Editor.ResolveAttribute
+namespace TheRealIronDuck.Ducktion.Editor.Tests.Editor.Attributes.Resolve
 {
     public class AutomaticResolveAttributeTest : DucktionTest
     {
@@ -95,7 +95,6 @@ namespace TheRealIronDuck.Ducktion.Editor.Tests.Editor.ResolveAttribute
             logger.AssertHasMessage(LogLevel.Debug, "I was called!");
         }
         
-        // TEST IT can specify the ID for variables
         [Test]
         public void ItCanResolveSpecificIdsForFieldsAndProperties()
         {

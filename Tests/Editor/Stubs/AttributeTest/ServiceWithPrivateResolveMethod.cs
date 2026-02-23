@@ -1,3 +1,4 @@
+using TheRealIronDuck.Ducktion.Attributes;
 using TheRealIronDuck.Ducktion.Logging;
 
 namespace TheRealIronDuck.Ducktion.Editor.Tests.Editor.Stubs.AttributeTest
@@ -7,7 +8,7 @@ namespace TheRealIronDuck.Ducktion.Editor.Tests.Editor.Stubs.AttributeTest
         public SimpleService Simple { get; private set; }
         public AnotherService Another { get; private set; }
 
-        [Attributes.Resolve]
+        [Resolve]
         private void ThisIsAMethodForSure(SimpleService simple, AnotherService another, DucktionLogger logger)
         {
             logger.Log(LogLevel.Debug, "I was called!");

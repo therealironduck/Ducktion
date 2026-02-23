@@ -481,13 +481,43 @@ namespace TheRealIronDuck.Ducktion
 
             foreach (var field in allFields)
             {
-                var attribute = field.GetCustomAttribute<ResolveAttribute>();
+                var resolveAttribute = field.GetCustomAttribute<ResolveAttribute>();
+                if (resolveAttribute != null)
+                {
+                    HandleResolveAttribute(field, instance, dependencyChain, resolveAttribute);
+                }
+
+                var resolveTagsAttribute = field.GetCustomAttribute<ResolveTagsAttribute>();
+                if (resolveTagsAttribute != null)
+                {
+                    HandleResolveTagsAttribute(field, instance, resolveTagsAttribute);
+                }
+            }
+
+            var methods = instance.GetType().GetMethods(flags);
+
+            foreach (var method in methods)
+            {
+                var attribute = method.GetCustomAttribute<ResolveAttribute>();
                 if (attribute == null)
                 {
                     continue;
                 }
 
-                switch (field)
+                var methodParameters = ResolveParametersForMethod(
+                    instance.GetType(),
+                    dependencyChain,
+                    method,
+                    new Dictionary<string, object>()
+                );
+
+                method.Invoke(instance, methodParameters.ToArray());
+            }
+        }
+
+        private void HandleResolveAttribute(MemberInfo field, object instance, Type[] dependencyChain, ResolveAttribute attribute)
+        {
+             switch (field)
                 {
                     case FieldInfo f1:
                         f1.SetValue(
@@ -511,26 +541,26 @@ namespace TheRealIronDuck.Ducktion
                         );
                         break;
                 }
-            }
+        }
 
-            var methods = instance.GetType().GetMethods(flags);
-
-            foreach (var method in methods)
+        private void HandleResolveTagsAttribute(MemberInfo field, object instance, ResolveTagsAttribute attribute)
+        {
+            switch (field)
             {
-                var attribute = method.GetCustomAttribute<ResolveAttribute>();
-                if (attribute == null)
-                {
-                    continue;
-                }
+                // TODO: Validate that is is TaggedServices
+                case FieldInfo f1:
+                    f1.SetValue(
+                        instance,
+                        GetTagged(attribute.Tag)
+                    );
+                    break;
 
-                var methodParameters = ResolveParametersForMethod(
-                    instance.GetType(),
-                    dependencyChain,
-                    method,
-                    new Dictionary<string, object>()
-                );
-
-                method.Invoke(instance, methodParameters.ToArray());
+                case PropertyInfo p1:
+                    p1.SetValue(
+                        instance,
+                        GetTagged(attribute.Tag)
+                    );
+                    break;
             }
         }
 
@@ -656,6 +686,14 @@ namespace TheRealIronDuck.Ducktion
             }
         }
 
+        public TaggedServices GetTagged(string targetTag)
+        {
+            return new TaggedServices(
+                this,
+                _services.Values.Where(service => service.Tags.Contains(targetTag)).ToList()
+            );
+        }
+
         #endregion
 
         #region HELPER METHODS
@@ -745,6 +783,14 @@ namespace TheRealIronDuck.Ducktion
 
             foreach (var parameter in method.GetParameters())
             {
+                // TODO: Validate parameter type matches attribute
+                var resolveTags = parameter.GetCustomAttribute<ResolveTagsAttribute>();
+                if (resolveTags != null)
+                {
+                    parameters.Add(GetTagged(resolveTags.Tag));
+                    continue;
+                }
+
                 // If the given parameter is already set, we just set it and continue -> skipping the stuff later on
                 if (preSetParameters.ContainsKey(parameter.Name))
                 {
@@ -756,6 +802,10 @@ namespace TheRealIronDuck.Ducktion
                     parameters.Add(preSetParameters[parameter.Name]);
                     continue;
                 }
+
+                // TODO:
+                // Draw graph: Instance -> Callback -> Resolve
+                // Graph 2 [Resolve]: Tagged > Pre-Set Parameters > Resolve (optional ID)
 
                 // If the given parameter was already resolved in the current chain, we will throw an error
                 // This is to prevent circular dependencies
