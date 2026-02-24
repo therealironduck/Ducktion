@@ -1,5 +1,7 @@
 using NUnit.Framework;
 using TheRealIronDuck.Ducktion.Editor.Tests.Editor.Stubs;
+using TheRealIronDuck.Ducktion.Exceptions;
+using TheRealIronDuck.Ducktion.Logging;
 
 namespace TheRealIronDuck.Ducktion.Editor.Tests.Editor.Container
 {
@@ -103,6 +105,24 @@ namespace TheRealIronDuck.Ducktion.Editor.Tests.Editor.Container
 
             var taggedAnother = container.GetTagged("another_tag");
             Assert.AreEqual(0, taggedAnother.Count);
+        }
+
+        [Test]
+        public void ItPreventsTheTaggedServicesFromBeingAutoResolved()
+        {
+            container.Configure(newEnableAutoResolve: true, newLevel: LogLevel.Disabled);
+
+            var failed = false;
+            try
+            {
+                container.Resolve<TaggedServices>();
+            }
+            catch (DependencyResolveException)
+            {
+                failed = true;
+            }
+
+            Assert.IsTrue(failed);
         }
     }
 }
