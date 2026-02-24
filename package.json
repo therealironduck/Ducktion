@@ -1,6 +1,6 @@
 ﻿{
   "name": "com.therealironduck.ducktion",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "displayName": "Ducktion",
   "description": "Simple, flexible dependency injection for Unity!",
   "unity": "2022.3",

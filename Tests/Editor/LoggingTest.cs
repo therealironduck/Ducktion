@@ -282,5 +282,26 @@ namespace TheRealIronDuck.Ducktion.Editor.Tests.Editor
                 $"Service {typeof(SimpleScriptableObject)} cant be resolved: Cannot auto resolve scriptable objects"
             );
         }
+
+        [Test]
+        public void ItLogsAnErrorIfAnyServiceIsBeingPreventedFromAutoResolving()
+        {
+            var logger = FakeLogger();
+            container.Configure(newEnableAutoResolve: true);
+
+            try
+            {
+                container.Resolve<ServiceWithNoAutoResolve>();
+            }
+            catch (Exception)
+            {
+                // ignored
+            }
+
+            logger.AssertHasMessage(
+                LogLevel.Error,
+                $"Service {typeof(ServiceWithNoAutoResolve)} cant be resolved: Auto Resolving is disabled for this service"
+            );
+        }
     }
 }

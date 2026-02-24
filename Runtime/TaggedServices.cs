@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
+using TheRealIronDuck.Ducktion.Attributes;
 
 namespace TheRealIronDuck.Ducktion
 {
@@ -10,6 +11,7 @@ namespace TheRealIronDuck.Ducktion
     /// The collection itself holds the ServiceDefinitions. You can use the `GetServices` method to get
     /// an iterator for all resolved services. Before using that method, services are not automatically resolved.
     /// </summary>
+    [NoAutoResolve]
     public class TaggedServices : IReadOnlyCollection<ServiceDefinition>
     {
         /// <summary>

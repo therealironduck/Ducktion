@@ -609,6 +609,15 @@ namespace TheRealIronDuck.Ducktion
                 return service.Instance;
             }
 
+            // If no service was registered, we check if we even can auto resolve it
+            var noAutoResolve = type.GetCustomAttribute<NoAutoResolveAttribute>();
+            if (service == null && noAutoResolve != null)
+            {
+                _logger?.Log(LogLevel.Error, $"Service {type} cant be resolved: Auto Resolving is disabled for this service");
+
+                throw new DependencyResolveException(type, "Service is restricted from being auto resolved");
+            }
+
             // Next we check if there is a callback which should be executed
             if (service?.Callback != null)
             {
