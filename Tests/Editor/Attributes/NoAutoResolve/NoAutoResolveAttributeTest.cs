@@ -27,7 +27,7 @@ namespace TheRealIronDuck.Ducktion.Editor.Tests.Editor.Attributes.NoAutoResolve
         }
 
         [Test]
-        public void ItStillAllowsProtectedServicesToBeRegisteredManualy()
+        public void ItStillAllowsProtectedServicesToBeRegisteredManually()
         {
             container.Register<ServiceWithNoAutoResolve>();
 
