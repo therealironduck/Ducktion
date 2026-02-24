@@ -111,7 +111,6 @@ namespace TheRealIronDuck.Ducktion.Editor.Tests.Editor.Container
         public void ItPreventsTheTaggedServicesFromBeingAutoResolved()
         {
             container.Configure(newEnableAutoResolve: true, newLevel: LogLevel.Disabled);
-            container.Reinitialize();
 
             var failed = false;
             try
